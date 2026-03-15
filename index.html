@@ -1,162 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bhys Chat</title>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+<style>
+
+*{box-sizing:border-box;}
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:#0f172a;
+color:white;
+display:flex;
+height:100vh;
+overflow:hidden;
+}
+
+/* Sidebar */
+
+#sidebar{
+width:260px;
+background:#111827;
+padding:15px;
+border-right:1px solid #1f2937;
+overflow:auto;
+}
+
+#sidebar input,#sidebar button{
+width:100%;
+padding:8px;
+margin-bottom:8px;
+border-radius:6px;
+border:none;
+}
+
+button{
+background:#2563eb;
+color:white;
+font-weight:bold;
+cursor:pointer;
+}
+
+button:hover{background:#1d4ed8;}
+
+#main{
+flex:1;
+display:flex;
+flex-direction:column;
+min-width:0;
+}
+
+#chat{
+flex:1;
+overflow:auto;
+padding:15px;
+}
+
+/* Messages */
+
+.msg{
+display:flex;
+gap:10px;
+margin-bottom:12px;
+}
+
+.avatar{
+width:36px;
+height:36px;
+border-radius:50%;
+background:#374151;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+color:white;
+}
+
+.name{font-weight:bold;}
+.time{font-size:11px;opacity:.6;margin-left:6px;}
+
+.badge{
+background:#374151;
+padding:2px 6px;
+border-radius:4px;
+font-size:11px;
+margin-left:6px;
+}
+
+/* Input */
+
+#inputbar{
+display:flex;
+gap:6px;
+padding:10px;
+border-top:1px solid #1f2937;
+background:#111827;
+}
+
+#inputbar input[type="text"]{
+flex:1;
+padding:8px;
+border-radius:6px;
+border:none;
+color:white;
+background:#1f2937;
+}
+
+/* Room info */
+
+#roomInfo{
+padding:6px;
+background:#020617;
+font-size:13px;
+border-bottom:1px solid #1f2937;
+}
+
+#userList{
+font-size:12px;
+margin-top:10px;
+}
+
+/* Image Zoom */
+
+#zoomViewer{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.85);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:999;
+}
+
+#zoomViewer img{
+max-width:90%;
+max-height:90%;
+border-radius:8px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="zoomViewer" onclick="closeZoom()">
+<img id="zoomImg">
+</div>
+
+<div id="sidebar">
+
+<h2>Bhys Chat</h2>
+
+<h3>Room</h3>
+<input id="room" placeholder="Room name">
+<button onclick="createRoom()">Create Room</button>
+<button onclick="joinRoom()">Join Room</button>
+
+<div id="roomInfo">Not in a room</div>
+
+<h3>Users</h3>
+<div id="userList"></div>
+
+<h3>Profile</h3>
+<input id="username" placeholder="Name">
+<input type="color" id="color" value="#60a5fa">
+<input id="badge" placeholder="Badge">
+<input type="file" id="avatarUpload" accept="image/*">
+
+</div>
+
+<div id="main">
+
+<div id="chat"></div>
+
+<div id="inputbar">
+<input id="message" type="text" placeholder="Message...">
+<input type="file" id="file">
+<button onclick="send()">Send</button>
+</div>
+
+</div>
+
 <script>
+
+/* GLOBAL */
 
 let peer;
 let connections=[];
 let seenMessages=new Set();
-let currentRoom=null;
-let isConnected=false;
 let userAvatar=null;
+let users={};
 
-/* =========================
-   PROFILE SYSTEM
-========================= */
+/* STORAGE */
 
 function saveProfile(){
-localStorage.setItem("name",username.value);
-localStorage.setItem("badge",badge.value);
-localStorage.setItem("color",color.value);
-localStorage.setItem("avatar",userAvatar||"");
+localStorage.setItem("chat_name",username.value);
+localStorage.setItem("chat_color",color.value);
+localStorage.setItem("chat_badge",badge.value);
+localStorage.setItem("chat_avatar",userAvatar);
+localStorage.setItem("chat_room",room.value);
 }
 
 function loadProfile(){
-username.value=localStorage.getItem("name")||"";
-badge.value=localStorage.getItem("badge")||"";
-color.value=localStorage.getItem("color")||"#60a5fa";
-userAvatar=localStorage.getItem("avatar")||null;
+
+username.value=localStorage.getItem("chat_name")||"";
+color.value=localStorage.getItem("chat_color")||"#60a5fa";
+badge.value=localStorage.getItem("chat_badge")||"";
+userAvatar=localStorage.getItem("chat_avatar")||null;
+
+const lastRoom=localStorage.getItem("chat_room");
+
+if(lastRoom){
+room.value=lastRoom;
+joinRoom();
 }
 
-/* =========================
-   ROOM STATUS
-========================= */
-
-function setConnected(state){
-isConnected=state;
-roomInfo.innerText=state
-? "Connected to Room: "+currentRoom
-: "Not Connected";
 }
 
-/* =========================
-   SYSTEM MESSAGE
-========================= */
+window.onload=loadProfile;
 
-function system(text){
+/* USER LIST */
+
+function updateUsers(){
+userList.innerHTML="";
+
+Object.values(users).forEach(u=>{
 const div=document.createElement("div");
-div.className="system";
-div.innerText=text;
-chat.appendChild(div);
-chat.scrollTop=chat.scrollHeight;
-}
-
-/* =========================
-   ENTER KEY LOGIC
-========================= */
-
-document.addEventListener("keydown",function(e){
-
-if(e.key==="Enter"){
-
-if(e.shiftKey) return;
-
-if(document.activeElement!==message){
-e.preventDefault();
-message.focus();
-return;
-}
-
-e.preventDefault();
-
-if(message.value.trim()!=="" || file.files.length>0){
-send();
-}
-
-}
-
+div.textContent=u;
+userList.appendChild(div);
 });
-
-/* =========================
-   PASTE IMAGE SUPPORT
-========================= */
-
-document.addEventListener("paste",function(e){
-
-const items=e.clipboardData.items;
-
-for(let item of items){
-
-if(item.type.startsWith("image")){
-
-const blob=item.getAsFile();
-const reader=new FileReader();
-
-reader.onload=ev=>{
-
-const data=createMessageObject();
-data.file={
-name:"pasted.png",
-type:"image/png",
-data:ev.target.result
-};
-
-addMessage(data);
-broadcast(data);
-
-};
-
-reader.readAsDataURL(blob);
-
 }
 
-}
-
-});
-
-/* =========================
-   IMAGE ZOOM
-========================= */
-
-function zoomImage(src){
-zoomImg.src=src;
-imageZoom.style.display="flex";
-}
-
-function closeZoom(){
-imageZoom.style.display="none";
-}
-
-/* =========================
-   ROOM SYSTEM (FIXED)
-========================= */
+/* ROOM SYSTEM */
 
 function closePeer(){
-if(peer)peer.destroy();
+if(peer) peer.destroy();
 connections=[];
-setConnected(false);
+users={};
+updateUsers();
 }
 
 function createRoom(){
 
 closePeer();
 
-currentRoom=room.value||Math.random().toString(36).slice(2,8);
-localStorage.setItem("room",currentRoom);
-
-peer=new Peer(currentRoom);
+peer=new Peer(room.value);
 
 peer.on("open",()=>{
-setConnected(true);
-system("Room Created");
+
+roomInfo.innerText="Room: "+room.value;
+saveProfile();
+
 });
 
 peer.on("connection",conn=>{
+
 connections.push(conn);
 
-conn.on("open",()=>{
-system("User Joined");
-sendUserUpdate();
-});
-
 conn.on("data",handleData);
+
+conn.on("open",()=>{
+sendUser(conn);
+});
 
 });
 
@@ -166,190 +276,254 @@ function joinRoom(){
 
 closePeer();
 
-currentRoom=room.value;
-localStorage.setItem("room",currentRoom);
-
 peer=new Peer();
 
 peer.on("open",()=>{
 
-const conn=peer.connect(currentRoom);
+const conn=peer.connect(room.value);
+
 connections.push(conn);
 
-conn.on("open",()=>{
-setConnected(true);
-system("Joined Room");
-sendUserUpdate();
-});
-
-conn.on("data",handleData);
-
-});
-
-}
-
-/* =========================
-   USER SYNC
-========================= */
-
-function sendUserUpdate(){
-broadcast({
-type:"user",
-name:username.value||"User",
-id:peer.id
-});
-}
-
-/* =========================
-   MESSAGE CREATION
-========================= */
-
-function createMessageObject(){
-return{
-id:Date.now()+Math.random(),
-type:"msg",
-name:username.value||"User",
-color:color.value,
-badge:badge.value,
-avatar:userAvatar,
-msg:message.value.trim(),
-time:Date.now()
-};
-}
-
-/* =========================
-   SEND MESSAGE / FILES
-========================= */
-
-function send(){
-
-if(!isConnected){
-alert("Not connected to a room.");
-return;
-}
+roomInfo.innerText="Room: "+room.value;
 
 saveProfile();
 
-const text=message.value.trim();
-const selectedFile=file.files[0];
+conn.on("data",handleData);
 
-if(!text && !selectedFile) return;
-
-const data=createMessageObject();
-
-if(selectedFile){
-
-const reader=new FileReader();
-
-reader.onload=e=>{
-data.file={
-name:selectedFile.name,
-type:selectedFile.type,
-data:e.target.result
-};
-finish();
-};
-
-reader.readAsDataURL(selectedFile);
-
-}else{
-finish();
-}
-
-function finish(){
-addMessage(data);
-broadcast(data);
-seenMessages.add(data.id);
-}
-
-message.value="";
-file.value="";
-}
-
-/* =========================
-   RECEIVE DATA
-========================= */
-
-function handleData(data){
-
-if(data.type==="msg"){
-
-if(seenMessages.has(data.id)) return;
-
-seenMessages.add(data.id);
-addMessage(data);
-
-}
-
-if(data.type==="user"){
-system(data.name+" Joined");
-}
-
-}
-
-/* =========================
-   BROADCAST
-========================= */
-
-function broadcast(data){
-connections.forEach(c=>{
-if(c.open)c.send(data);
+conn.on("open",()=>{
+sendUser(conn);
 });
+
+});
+
 }
 
-/* =========================
-   MESSAGE DISPLAY
-========================= */
+/* USER SYNC */
+
+function sendUser(conn){
+
+conn.send({
+type:"user",
+name:username.value||"User"
+});
+
+}
+
+function broadcastUser(){
+
+connections.forEach(c=>{
+sendUser(c);
+});
+
+}
+
+/* MESSAGE UI */
 
 function addMessage(d){
 
 const div=document.createElement("div");
 div.className="msg";
 
+const avatarHTML=d.avatar
+? `<img src="${d.avatar}" class="avatar">`
+: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`;
+
 let fileHTML="";
 
 if(d.file){
 
-if(d.file.type.startsWith("image")){
-fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;cursor:pointer" onclick="zoomImage('${d.file.data}')">`;
+if(d.fileType.startsWith("image/")){
+
+fileHTML=`<img src="${d.file}" style="max-width:200px;border-radius:6px;margin-top:5px;cursor:pointer" onclick="zoomImage('${d.file}')">`;
+
 }else{
-fileHTML=`<a href="${d.file.data}" download="${d.file.name}">Download ${d.file.name}</a>`;
-}
+
+fileHTML=`<a href="${d.file}" download="${d.fileName}">Download ${d.fileName}</a>`;
 
 }
 
-const avatarHTML=d.avatar
-? `<div class="avatar"><img src="${d.avatar}"></div>`
-: `<div class="avatar">${d.name.charAt(0)}</div>`;
+}
 
 div.innerHTML=`
+
 ${avatarHTML}
+
 <div>
+
 <span class="name" style="color:${d.color}">${d.name}</span>
 ${d.badge?`<span class="badge">${d.badge}</span>`:""}
-<span class="time">${new Date(d.time).toLocaleTimeString()}</span>
+
 <div>${d.msg||""}</div>
+
 ${fileHTML}
+
 </div>
 `;
 
 chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
+
 }
 
-/* =========================
-   AUTO RECONNECT
-========================= */
+/* SEND */
 
-function autoReconnect(){
-loadProfile();
-const saved=localStorage.getItem("room");
-if(saved){
-room.value=saved;
-joinRoom();
-}
+function send(){
+
+const msg=message.value.trim();
+const fileInput=file.files[0];
+
+if(!msg && !fileInput) return;
+
+saveProfile();
+
+const data={
+id:Date.now()+Math.random(),
+type:"msg",
+name:username.value||"User",
+color:color.value,
+badge:badge.value,
+avatar:userAvatar,
+msg:msg
+};
+
+if(fileInput){
+
+const reader=new FileReader();
+
+reader.onload=e=>{
+data.file=e.target.result;
+data.fileType=fileInput.type;
+data.fileName=fileInput.name;
+finish();
+};
+
+reader.readAsDataURL(fileInput);
+
+}else finish();
+
+function finish(){
+
+addMessage(data);
+
+connections.forEach(c=>c.send(data));
+
 }
 
-autoReconnect();
+message.value="";
+file.value="";
+
+}
+
+/* RECEIVE */
+
+function handleData(data){
+
+if(data.type==="user"){
+
+users[data.name]=data.name;
+updateUsers();
+return;
+
+}
+
+if(data.type==="msg"){
+
+if(seenMessages.has(data.id)) return;
+
+seenMessages.add(data.id);
+
+addMessage(data);
+
+}
+
+}
+
+/* AVATAR */
+
+avatarUpload.addEventListener("change",()=>{
+
+const reader=new FileReader();
+
+reader.onload=e=>{
+userAvatar=e.target.result;
+saveProfile();
+};
+
+reader.readAsDataURL(avatarUpload.files[0]);
+
+});
+
+/* IMAGE ZOOM */
+
+function zoomImage(src){
+zoomViewer.style.display="flex";
+zoomImg.src=src;
+}
+
+function closeZoom(){
+zoomViewer.style.display="none";
+}
+
+/* PASTE IMAGE */
+
+document.addEventListener("paste",e=>{
+
+const items=e.clipboardData.items;
+
+for(let item of items){
+
+if(item.type.indexOf("image")!==-1){
+
+const file=item.getAsFile();
+
+const reader=new FileReader();
+
+reader.onload=ev=>{
+
+const data={
+id:Date.now(),
+type:"msg",
+name:username.value||"User",
+color:color.value,
+badge:badge.value,
+avatar:userAvatar,
+file:ev.target.result,
+fileType:"image/png",
+fileName:"pasted.png"
+};
+
+addMessage(data);
+
+connections.forEach(c=>c.send(data));
+
+};
+
+reader.readAsDataURL(file);
+
+}
+
+}
+
+});
+
+/* ENTER KEY */
+
+document.addEventListener("keydown",e=>{
+
+if(e.key==="Enter"){
+
+if(document.activeElement!==message){
+message.focus();
+return;
+}
+
+send();
+
+}
+
+});
 
 </script>
+
+</body>
+</html>
