@@ -5,31 +5,44 @@
 let peer = null
 let connections = {}
 let isHost = false
+let currentRoom = null
 
 const chat = document.getElementById("chat")
 
 function saveHistory(){
-  localStorage.setItem("chatHistory", chat.innerHTML)
+  localStorage.setItem("chatHistory_"+currentRoom, chat.innerHTML)
 }
 
 function loadHistory(){
-  let h = localStorage.getItem("chatHistory")
+  const h = localStorage.getItem("chatHistory_"+currentRoom)
   if(h) chat.innerHTML = h
+}
+
+function setRoomUI(created){
+  document.querySelector("button[onclick='createRoom()']").disabled = created
+  room.disabled = created
 }
 
 function createRoom(){
 
-  if(peer) peer.destroy()
+  const roomName = room.value.trim()
 
-  const roomName = room.value || Math.random().toString(36).substring(2,8)
-  room.value = roomName
+  if(!roomName){
+    alert("Type a room code first.")
+    return
+  }
 
+  if(peer){
+    peer.destroy()
+    connections = {}
+  }
+
+  currentRoom = roomName
   isHost = true
-  connections = {}
 
   peer = new Peer(roomName)
 
-  peer.on("connection", conn => {
+  peer.on("connection", conn=>{
     setupConnection(conn)
   })
 
@@ -37,36 +50,51 @@ function createRoom(){
 
   loadHistory()
 
-  const link = location.origin + location.pathname + "?room=" + roomName
+  setRoomUI(true)
 
   inviteBox.innerHTML = `
     Invite Link
-    <input id="inviteLink" value="${link}">
+    <input id="inviteLink" value="${location.origin + location.pathname + "?room=" + roomName}">
     <button onclick="copyInvite()">Copy</button>
   `
 }
 
+function copyInvite(){
+  const i = document.getElementById("inviteLink")
+  i.select()
+  document.execCommand("copy")
+  alert("Copied!")
+}
+
 function joinRoom(){
 
-  if(peer) peer.destroy()
+  if(peer){
+    peer.destroy()
+    connections = {}
+  }
 
+  if(!room.value.trim()){
+    alert("Enter room code.")
+    return
+  }
+
+  currentRoom = room.value.trim()
   isHost = false
-  connections = {}
 
   peer = new Peer()
 
-  peer.on("open", id => {
+  peer.on("open", ()=>{
+    const conn = peer.connect(currentRoom)
 
-    const conn = peer.connect(room.value)
-
-    conn.on("open", () => {
+    conn.on("open", ()=>{
       setupConnection(conn)
       conn.send({type:"requestHistory"})
     })
-
   })
 
   loadHistory()
+
+  setRoomUI(false)
 }
 
 function setupConnection(conn){
@@ -76,86 +104,61 @@ function setupConnection(conn){
   connections[conn.peer] = conn
 
   conn.on("data", receive)
-  conn.on("close", () => {
+
+  conn.on("close", ()=>{
     delete connections[conn.peer]
     system("User disconnected")
   })
 }
 
 function broadcast(data){
-  Object.values(connections).forEach(c => {
+  Object.values(connections).forEach(c=>{
     if(c.open) c.send(data)
   })
 }
 
 function send(){
 
-  const name = username.value || "User"
-  const colorVal = color.value
-  const badgeVal = badge.value
-  const msg = message.value
-  if(!msg.trim()) return
+  const msg = message.value.trim()
+  if(!msg) return
 
-  const imgFile = image.files[0]
-  const avatarFile = avatar.files[0]
-
-  function finalize(avatarData){
-
-    const data = {
-      type:"msg",
-      name,
-      color:colorVal,
-      badge:badgeVal,
-      msg,
-      avatar:avatarData,
-      time:Date.now()
-    }
-
-    if(imgFile){
-      const r = new FileReader()
-      r.onload = e => {
-        data.img = e.target.result
-        broadcast(data)
-        addMessage(data)
-      }
-      r.readAsDataURL(imgFile)
-    } else {
-      broadcast(data)
-      addMessage(data)
-    }
+  const data = {
+    type:"msg",
+    name: username.value || "User",
+    color: color.value,
+    badge: badge.value,
+    msg,
+    time: Date.now()
   }
 
-  if(avatarFile){
-    const r = new FileReader()
-    r.onload = e => finalize(e.target.result)
-    r.readAsDataURL(avatarFile)
-  } else {
-    finalize(null)
-  }
+  broadcast(data)
+  addMessage(data)
 
-  message.value = ""
-  image.value = ""
+  message.value=""
 }
 
 function receive(data){
 
-  if(data.type === "msg"){
+  if(data.type==="msg"){
     addMessage(data)
   }
 
-  if(data.type === "typing"){
-    typing.innerText = data.name + " is typing..."
-    clearTimeout(window.typingTimeout)
-    window.typingTimeout = setTimeout(()=>typing.innerText="",1000)
+  if(data.type==="typing"){
+    typing.innerText = data.name+" is typing..."
+    clearTimeout(window.typingTimer)
+    window.typingTimer = setTimeout(()=>{
+      typing.innerText=""
+    },1000)
   }
 
-  if(data.type === "requestHistory" && isHost){
-    const history = chat.innerHTML
-    data.type = "history"
-    broadcast({type:"history", content:history})
+  if(data.type==="requestHistory" && isHost){
+    broadcast({
+      type:"history",
+      content: chat.innerHTML
+    })
   }
 
-  if(data.type === "history"){
+  if(data.type==="history"){
     chat.innerHTML = data.content
   }
 }
@@ -163,25 +166,18 @@ function receive(data){
 function addMessage(d){
 
   const div = document.createElement("div")
-  div.className = "msg"
+  div.className="msg"
 
   const time = new Date(d.time).toLocaleTimeString()
 
-  const avatarImg = d.avatar || "https://i.imgur.com/6VBx3io.png"
-
-  const msg = d.msg.replace(/(https?:\/\/[^\s]+)/g,
-    '<a href="$1" target="_blank">$1</a>')
-
   div.innerHTML = `
-    <img class="avatar" src="${avatarImg}">
     <div>
       <span class="name" style="color:${d.color}">
         ${d.name}
       </span>
-      ${d.badge ? `<span class="badge">${d.badge}</span>` : ""}
+      ${d.badge ? `<span class="badge">${d.badge}</span>`:""}
       <span class="time">${time}</span>
-      <div>${msg}</div>
-      ${d.img ? `<img src="${d.img}" width="220">` : ""}
+      <div>${d.msg}</div>
     </div>
   `
 
@@ -191,42 +187,38 @@ function addMessage(d){
 }
 
 function system(text){
-
-  const div = document.createElement("div")
-  div.className = "system"
-  div.innerText = text
-
+  const div=document.createElement("div")
+  div.className="system"
+  div.innerText=text
   chat.appendChild(div)
-  chat.scrollTop = chat.scrollHeight
+  chat.scrollTop=chat.scrollHeight
   saveHistory()
 }
 
-let typingCooldown = false
+let typingCooldown=false
 
-message.addEventListener("input", () => {
+message.addEventListener("input",()=>{
 
   if(typingCooldown) return
-  typingCooldown = true
+  typingCooldown=true
 
   broadcast({
     type:"typing",
-    name:username.value || "User"
+    name: username.value || "User"
   })
 
   setTimeout(()=>typingCooldown=false,500)
 })
 
-message.addEventListener("keypress", e=>{
-  if(e.key === "Enter") send()
+message.addEventListener("keypress",e=>{
+  if(e.key==="Enter") send()
 })
 
 const params = new URLSearchParams(location.search)
 
 if(params.get("room")){
-  room.value = params.get("room")
+  room.value=params.get("room")
   joinRoom()
 }
-
-loadHistory()
 
 </script>
