@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MiniChat+</title>
+<title>Bhys Chat</title>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <style>
 *{box-sizing:border-box;}
+
 body{
 margin:0;
 font-family:Segoe UI, sans-serif;
@@ -17,6 +18,51 @@ color:white;
 display:flex;
 height:100vh;
 overflow:hidden;
+transition:filter 0.4s;
+}
+
+/* 🌈 Rainbow Mode */
+.rainbow-mode{
+animation:hueShift 6s linear infinite;
+}
+
+@keyframes hueShift{
+0%{filter:hue-rotate(0deg);}
+100%{filter:hue-rotate(360deg);}
+}
+
+/* ✨ Mystic Mode (NEW EFFECT) */
+.mystic-mode{
+animation:pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow{
+0%{box-shadow:0 0 0px #a855f7;}
+50%{box-shadow:0 0 40px #a855f7;}
+100%{box-shadow:0 0 0px #a855f7;}
+}
+
+/* 💙 Brody Blue Error Screen */
+#brodyScreen{
+position:fixed;
+inset:0;
+background:#0078d7;
+color:white;
+font-family:"Lucida Console","Courier New",monospace;
+padding:30px;
+z-index:9999;
+overflow:hidden;
+display:none;
+}
+
+#brodyScreen.active{
+display:block;
+}
+
+#brodySpam{
+white-space:pre;
+font-size:18px;
+line-height:22px;
 }
 
 #sidebar{
@@ -27,8 +73,7 @@ overflow:auto;
 border-right:1px solid #1f2937;
 }
 
-#sidebar h3{margin-top:15px;}
-#sidebar input, #sidebar button{
+#sidebar input,#sidebar button{
 width:100%;
 padding:8px;
 margin-bottom:8px;
@@ -67,11 +112,18 @@ margin-bottom:12px;
 width:36px;
 height:36px;
 border-radius:50%;
+background:#374151;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+color:white;
 object-fit:cover;
 }
 
 .name{font-weight:bold;}
 .time{font-size:11px;opacity:.6;margin-left:6px;}
+
 .badge{
 background:#374151;
 padding:2px 6px;
@@ -95,39 +147,22 @@ border-radius:6px;
 border:none;
 }
 
-#users{
-width:200px;
-background:#111827;
-padding:10px;
-overflow:auto;
-border-left:1px solid #1f2937;
-}
-
 .system{
 opacity:.7;
 font-style:italic;
 margin:6px 0;
 }
-
-#typing{
-font-size:12px;
-opacity:.7;
-padding-left:15px;
-}
-
-@media(max-width:900px){
-body{flex-direction:column;}
-#sidebar{width:100%;height:auto;border-right:none;border-bottom:1px solid #1f2937;}
-#users{display:none;}
-}
-
 </style>
 </head>
 
 <body>
 
+<div id="brodyScreen">
+<div id="brodySpam"></div>
+</div>
+
 <div id="sidebar">
-<h2>MiniChat+</h2>
+<h2>Bhys Chat</h2>
 
 <h3>Room</h3>
 <input id="room" placeholder="Room name" />
@@ -139,28 +174,86 @@ body{flex-direction:column;}
 <input id="username" placeholder="Name" />
 <input type="color" id="color" value="#60a5fa" />
 <input id="badge" placeholder="Badge" />
-<input type="file" id="avatar" accept="image/*" />
+<input type="file" id="avatarUpload" accept="image/*" />
 </div>
 
 <div id="main">
 <div id="chat"></div>
-<div id="typing"></div>
 <div id="inputbar">
 <input id="message" placeholder="Message..." />
-<input type="file" id="image" accept="image/*" />
 <button onclick="send()">Send</button>
 </div>
 </div>
 
-<div id="users">
-<h3>Online</h3>
-<div id="userList"></div>
-</div>
-
 <script>
+
 let peer;
 let connections=[];
 let seenMessages=new Set();
+let userAvatar=null;
+
+/* 🌈 Rainbow Names */
+function checkRainbow(name){
+const rainbowNames=[
+"joel",
+"thomas"
+];
+if(rainbowNames.includes(name.toLowerCase())){
+document.body.classList.add("rainbow-mode");
+}else{
+document.body.classList.remove("rainbow-mode");
+}
+}
+
+/* ✨ Mystic Effect Names (NEW) */
+function checkMystic(name){
+const mysticNames=[
+"darren",
+"uncle ed",
+"aunt anderson",
+"brodybessy"
+];
+
+if(mysticNames.includes(name.toLowerCase())){
+document.body.classList.add("mystic-mode");
+}else{
+document.body.classList.remove("mystic-mode");
+}
+}
+
+/* 💙 Brody Error Mode */
+function checkBrody(name){
+if(name.toLowerCase()==="brody"){
+document.getElementById("brodyScreen").classList.add("active");
+startBrodySpam();
+document.getElementById("main").style.display="none";
+document.getElementById("sidebar").style.display="none";
+}else{
+document.getElementById("brodyScreen").classList.remove("active");
+document.getElementById("main").style.display="flex";
+document.getElementById("sidebar").style.display="block";
+}
+}
+
+function startBrodySpam(){
+const spamArea=document.getElementById("brodySpam");
+let lines=[];
+for(let i=0;i<400;i++){
+lines.push("BRODYBESSY");
+}
+spamArea.textContent=lines.join("\n");
+}
+
+/* Avatar Upload */
+avatarUpload.addEventListener("change",()=>{
+const file=avatarUpload.files[0];
+if(!file) return;
+const reader=new FileReader();
+reader.onload=e=>{
+userAvatar=e.target.result;
+};
+reader.readAsDataURL(file);
+});
 
 function system(text){
 const div=document.createElement("div");
@@ -183,7 +276,6 @@ room.value=roomName;
 peer=new Peer(roomName);
 setupPeer();
 system("Room created");
-showInvite(roomName);
 }
 
 function joinRoom(){
@@ -204,7 +296,6 @@ peer.on("connection",conn=>{ setupConnection(conn); });
 function setupConnection(conn){
 connections.push(conn);
 conn.on("data",handleData);
-conn.on("close",()=>system("User disconnected"));
 }
 
 function broadcast(data){
@@ -213,34 +304,30 @@ connections.forEach(c=>c.send(data));
 
 function send(){
 const msgText=message.value.trim();
-if(!msgText && !image.files[0]) return;
+if(!msgText) return;
+
+const name=username.value||"User";
+
+checkRainbow(name);
+checkMystic(name);
+checkBrody(name);
 
 const data={
 id:Date.now()+Math.random(),
 type:"msg",
-name:username.value||"User",
+name:name,
 color:color.value,
 badge:badge.value,
-time:Date.now()
+avatar:userAvatar,
+time:Date.now(),
+msg:msgText
 };
 
-if(image.files[0]){
-const reader=new FileReader();
-reader.onload=e=>{ data.img=e.target.result; finalize(data); };
-reader.readAsDataURL(image.files[0]);
-}else{
-finalize(data);
-}
-
-function finalize(data){
-data.msg=msgText;
 addMessage(data);
 broadcast(data);
 seenMessages.add(data.id);
-}
 
 message.value="";
-image.value="";
 }
 
 function handleData(data){
@@ -253,39 +340,30 @@ addMessage(data);
 function addMessage(d){
 const div=document.createElement("div");
 div.className="msg";
-const avatar=d.avatar || "https://i.imgur.com/6VBx3io.png";
+
 const time=new Date(d.time).toLocaleTimeString();
-const safeMsg=(d.msg||"").replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank">$1</a>');
+
+const avatarContent=d.avatar
+? `<img src="${d.avatar}" class="avatar">`
+: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`;
 
 div.innerHTML=`
-<img class="avatar" src="${avatar}">
+${avatarContent}
 <div>
 <span class="name" style="color:${d.color}">${d.name}</span>
 ${d.badge?`<span class="badge">${d.badge}</span>`:""}
 <span class="time">${time}</span>
-<div>${safeMsg}</div>
-${d.img?`<img src="${d.img}" style="max-width:220px;border-radius:8px;margin-top:5px;">`:""}
+<div>${d.msg}</div>
 </div>`;
 
 chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-function showInvite(roomName){
-const link=location.origin+location.pathname+"?room="+roomName;
-inviteBox.innerHTML=`
-<input id="inviteLink" value="${link}" readonly>
-<button onclick="navigator.clipboard.writeText(inviteLink.value)">Copy Link</button>
-`;
-}
+message.addEventListener("keypress",e=>{
+if(e.key==="Enter") send();
+});
 
-message.addEventListener("keypress",e=>{ if(e.key==="Enter") send(); });
-
-const params=new URLSearchParams(location.search);
-if(params.get("room")){
-room.value=params.get("room");
-joinRoom();
-}
 </script>
 
 </body>
