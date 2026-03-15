@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <style>
+
 *{box-sizing:border-box;}
 
 body{
@@ -18,7 +19,6 @@ color:white;
 display:flex;
 height:100vh;
 overflow:hidden;
-transition:filter .4s;
 }
 
 /* Sidebar */
@@ -117,57 +117,39 @@ color:white;
 background:#1f2937;
 }
 
-/* Secret Modes */
+/* room info */
 
-.rainbow-mode{
-animation:hueShift 6s linear infinite;
+#roomInfo{
+padding:6px;
+background:#1f2937;
+font-size:14px;
 }
 
-@keyframes hueShift{
-0%{filter:hue-rotate(0deg);}
-100%{filter:hue-rotate(360deg);}
+/* user list */
+
+#users{
+margin-top:10px;
+background:#1f2937;
+padding:8px;
+border-radius:6px;
+font-size:13px;
 }
 
-.mystic-mode{
-animation:pulseGlow 2s infinite;
-}
+/* image zoom */
 
-@keyframes pulseGlow{
-0%{box-shadow:0 0 0px purple;}
-50%{box-shadow:0 0 30px purple;}
-100%{box-shadow:0 0 0px purple;}
-}
-
-/* Brody screen */
-
-#brodyScreen{
+#imageZoom{
 position:fixed;
 inset:0;
-background:#0078d7;
-color:white;
-font-family:"Lucida Console","Courier New",monospace;
-padding:30px;
+background:rgba(0,0,0,.9);
 display:none;
-z-index:9999;
-overflow:hidden;
+align-items:center;
+justify-content:center;
+z-index:999;
 }
 
-#brodyScreen.active{display:block;}
-
-#brodySpam{
-white-space:pre;
-font-size:18px;
-line-height:22px;
-}
-
-/* Admin panel */
-
-#adminPanel{
-display:none;
-background:#1f2937;
-padding:10px;
-margin-top:10px;
-border-radius:8px;
+#imageZoom img{
+max-width:90%;
+max-height:90%;
 }
 
 </style>
@@ -175,8 +157,8 @@ border-radius:8px;
 
 <body>
 
-<div id="brodyScreen">
-<div id="brodySpam"></div>
+<div id="imageZoom" onclick="closeZoom()">
+<img id="zoomImg">
 </div>
 
 <div id="sidebar">
@@ -184,22 +166,22 @@ border-radius:8px;
 <h2>Bhys Chat</h2>
 
 <h3>Room</h3>
+
+<div id="roomInfo">Not in a room</div>
+
 <input id="room" placeholder="Room name">
 <button onclick="createRoom()">Create Room</button>
 <button onclick="joinRoom()">Join Room</button>
 
+<h3>Users</h3>
+<div id="users"></div>
+
 <h3>Profile</h3>
+
 <input id="username" placeholder="Name">
 <input type="color" id="color" value="#60a5fa">
 <input id="badge" placeholder="Badge">
 <input type="file" id="avatarUpload" accept="image/*">
-
-<div id="adminPanel">
-<h3>Dev Panel</h3>
-<button onclick="clearChat()">Clear Chat</button>
-<button onclick="spamSystem()">Spam Event</button>
-<button onclick="toggleRainbow()">Toggle Rainbow</button>
-</div>
 
 </div>
 
@@ -209,7 +191,7 @@ border-radius:8px;
 
 <div id="inputbar">
 <input id="message" type="text" placeholder="Message...">
-<input type="file" id="image" accept="image/*">
+<input type="file" id="file">
 <button onclick="send()">Send</button>
 </div>
 
@@ -217,156 +199,173 @@ border-radius:8px;
 
 <script>
 
+/* STATE */
+
 let peer;
 let connections=[];
+let users={};
 let seenMessages=new Set();
 let userAvatar=null;
+let currentRoom=null;
 
-/* ENTER KEY */
+/* SAVE PROFILE */
 
-document.addEventListener("keydown",e=>{
+function saveProfile(){
 
-if(e.key==="Enter"){
-
-if(document.activeElement!==message){
-message.focus();
-return;
-}
-
-if(message.value.trim()!==""){
-send();
-}
+localStorage.setItem("name",username.value);
+localStorage.setItem("badge",badge.value);
+localStorage.setItem("color",color.value);
+localStorage.setItem("avatar",userAvatar);
 
 }
 
-});
+function loadProfile(){
+
+username.value=localStorage.getItem("name")||"";
+badge.value=localStorage.getItem("badge")||"";
+color.value=localStorage.getItem("color")||"#60a5fa";
+userAvatar=localStorage.getItem("avatar");
+
+}
+
+/* ROOM DISPLAY */
+
+function updateRoomInfo(){
+
+roomInfo.innerText=currentRoom
+? "Room: "+currentRoom
+: "Not in a room";
+
+}
+
+/* USER LIST */
+
+function updateUserList(){
+
+users[peer.id]=username.value||"User";
+
+usersDiv="";
+
+for(let id in users){
+
+usersDiv+=users[id]+"<br>";
+
+}
+
+users.innerHTML=usersDiv;
+
+}
 
 /* SYSTEM MESSAGE */
 
 function system(text){
+
 const div=document.createElement("div");
 div.className="system";
 div.innerText=text;
+
 chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
-}
 
-/* MODES */
-
-function checkRainbow(name){
-if(["joel","thomas"].includes(name.toLowerCase())){
-document.body.classList.add("rainbow-mode");
-}else{
-document.body.classList.remove("rainbow-mode");
-}
-}
-
-function checkMystic(name){
-if(["darren","uncle ed","aunt anderson"].includes(name.toLowerCase())){
-document.body.classList.add("mystic-mode");
-}else{
-document.body.classList.remove("mystic-mode");
-}
-}
-
-function checkBrody(name){
-
-if(name.toLowerCase()==="brody"){
-
-document.getElementById("brodyScreen").classList.add("active");
-document.getElementById("main").style.display="none";
-document.getElementById("sidebar").style.display="none";
-
-startBrodySpam();
-
-}else{
-
-document.getElementById("brodyScreen").classList.remove("active");
-document.getElementById("main").style.display="flex";
-document.getElementById("sidebar").style.display="block";
-
-}
-
-}
-
-function startBrodySpam(){
-let lines=[];
-for(let i=0;i<400;i++){
-lines.push("BRODYBESSY");
-}
-document.getElementById("brodySpam").textContent=lines.join("\n");
-}
-
-/* ADMIN */
-
-function checkAdmin(name){
-if(name.toLowerCase()==="admin123"){
-adminPanel.style.display="block";
-system("Dev mode enabled");
-}else{
-adminPanel.style.display="none";
-}
-}
-
-function clearChat(){
-chat.innerHTML="";
-system("Chat cleared by admin");
-}
-
-function spamSystem(){
-for(let i=0;i<5;i++){
-system("ADMIN EVENT TRIGGERED");
-}
-}
-
-function toggleRainbow(){
-document.body.classList.toggle("rainbow-mode");
 }
 
 /* AVATAR */
 
 avatarUpload.addEventListener("change",()=>{
+
 const file=avatarUpload.files[0];
-if(!file) return;
+if(!file)return;
 
 const reader=new FileReader();
 
 reader.onload=e=>{
 userAvatar=e.target.result;
+saveProfile();
 };
 
 reader.readAsDataURL(file);
+
 });
+
+/* FILE PASTE */
+
+document.addEventListener("paste",e=>{
+
+const items=e.clipboardData.items;
+
+for(let item of items){
+
+if(item.type.startsWith("image")){
+
+const file=item.getAsFile();
+
+fileInput=file;
+
+sendFile(file);
+
+}
+
+}
+
+});
+
+/* IMAGE ZOOM */
+
+function zoomImage(src){
+
+zoomImg.src=src;
+imageZoom.style.display="flex";
+
+}
+
+function closeZoom(){
+
+imageZoom.style.display="none";
+
+}
 
 /* ROOM SYSTEM */
 
 function closePeer(){
-if(peer) peer.destroy();
+
+if(peer)peer.destroy();
 connections=[];
+
 }
 
 function createRoom(){
 
 closePeer();
 
-const roomName=room.value || Math.random().toString(36).substring(2,8);
-room.value=roomName;
+currentRoom=room.value||Math.random().toString(36).slice(2,7);
 
-peer=new Peer(roomName);
+peer=new Peer(currentRoom);
+
+localStorage.setItem("room",currentRoom);
+
+updateRoomInfo();
 
 peer.on("open",()=>{
-system("Room created: "+roomName);
+
+system("Room created");
+
+updateUserList();
+
 });
 
 peer.on("connection",conn=>{
-connections.push(conn);
 
-system("A user joined the room");
+connections.push(conn);
 
 conn.on("data",handleData);
 
-conn.on("close",()=>{
-system("A user left the room");
+conn.on("open",()=>{
+
+conn.send({
+type:"user",
+name:username.value
+});
+
 });
 
 });
@@ -375,31 +374,38 @@ system("A user left the room");
 
 function joinRoom(){
 
-if(!room.value) return;
-
 closePeer();
+
+currentRoom=room.value;
+
+localStorage.setItem("room",currentRoom);
 
 peer=new Peer();
 
+updateRoomInfo();
+
 peer.on("open",()=>{
 
-const conn=peer.connect(room.value);
+const conn=peer.connect(currentRoom);
 
 connections.push(conn);
 
-system("Joined room: "+room.value);
-
 conn.on("data",handleData);
 
-conn.on("close",()=>{
-system("Disconnected from room");
+conn.on("open",()=>{
+
+conn.send({
+type:"user",
+name:username.value
+});
+
 });
 
 });
 
 }
 
-/* CHAT */
+/* MESSAGE DISPLAY */
 
 function addMessage(d){
 
@@ -408,9 +414,25 @@ div.className="msg";
 
 const time=new Date(d.time).toLocaleTimeString();
 
+let fileHTML="";
+
+if(d.file){
+
+if(d.file.type.startsWith("image")){
+
+fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;cursor:pointer" onclick="zoomImage('${d.file.data}')">`;
+
+}else{
+
+fileHTML=`<a href="${d.file.data}" download="${d.file.name}">Download ${d.file.name}</a>`;
+
+}
+
+}
+
 const avatarHTML=d.avatar
 ? `<img src="${d.avatar}" class="avatar">`
-: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`;
+: `<div class="avatar">${d.name.charAt(0)}</div>`;
 
 div.innerHTML=`
 
@@ -423,9 +445,10 @@ ${d.badge?`<span class="badge">${d.badge}</span>`:""}
 
 <div>${d.msg||""}</div>
 
-${d.img?`<img src="${d.img}" style="max-width:200px;margin-top:4px;border-radius:6px;">`:""}
+${fileHTML}
 
 </div>
+
 `;
 
 chat.appendChild(div);
@@ -433,69 +456,116 @@ chat.scrollTop=chat.scrollHeight;
 
 }
 
+/* SEND */
+
 function send(){
 
-const msgText=message.value.trim();
+saveProfile();
 
-if(!msgText && !image.files[0]) return;
+const text=message.value.trim();
 
-const name=username.value||"User";
-
-checkRainbow(name);
-checkMystic(name);
-checkBrody(name);
-checkAdmin(name);
+if(!text && !file.files[0])return;
 
 const data={
+
 id:Date.now()+Math.random(),
 type:"msg",
-name:name,
+name:username.value||"User",
 color:color.value,
 badge:badge.value,
 avatar:userAvatar,
-time:Date.now(),
-msg:msgText
+msg:text,
+time:Date.now()
+
 };
 
-if(image.files[0]){
+if(file.files[0]){
 
 const reader=new FileReader();
 
 reader.onload=e=>{
-data.img=e.target.result;
-finish();
+
+data.file={
+name:file.files[0].name,
+type:file.files[0].type,
+data:e.target.result
 };
 
-reader.readAsDataURL(image.files[0]);
+finish();
+
+};
+
+reader.readAsDataURL(file.files[0]);
 
 }else{
+
 finish();
+
 }
 
 function finish(){
+
 addMessage(data);
 broadcast(data);
 seenMessages.add(data.id);
+
 }
 
 message.value="";
-image.value="";
+file.value="";
 
 }
 
+/* HANDLE DATA */
+
 function handleData(data){
 
-if(data.type!=="msg") return;
-if(seenMessages.has(data.id)) return;
+if(data.type==="msg"){
+
+if(seenMessages.has(data.id))return;
 
 seenMessages.add(data.id);
+
 addMessage(data);
 
 }
 
-function broadcast(data){
-connections.forEach(c=>c.send(data));
+if(data.type==="user"){
+
+users[data.id]=data.name;
+
+updateUserList();
+
 }
+
+}
+
+/* BROADCAST */
+
+function broadcast(data){
+
+connections.forEach(c=>c.send(data));
+
+}
+
+/* AUTO RECONNECT */
+
+function autoReconnect(){
+
+loadProfile();
+
+const savedRoom=localStorage.getItem("room");
+
+if(savedRoom){
+
+room.value=savedRoom;
+joinRoom();
+
+}
+
+}
+
+autoReconnect();
 
 </script>
 
