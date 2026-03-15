@@ -69,6 +69,8 @@ background:#020617;
 font-size:13px;
 }
 
+/* USERS */
+
 #userList{
 font-size:12px;
 margin-top:10px;
@@ -168,8 +170,6 @@ border-radius:8px;
 display:none;
 }
 
-/* THEMES */
-
 .theme-light{background:#f4f4f4;color:black;}
 .theme-green{background:#022c22;}
 .theme-purple{background:#1e1b4b;}
@@ -231,17 +231,8 @@ animation:crackSpread 1.2s forwards;
 }
 
 @keyframes crackSpread{
-
-0%{
-width:0;
-opacity:0;
-}
-
-100%{
-width:100vw;
-opacity:1;
-}
-
+0%{width:0;opacity:0;}
+100%{width:100vw;opacity:1;}
 }
 
 .sinPopup{
@@ -256,21 +247,9 @@ animation:fallError 2s linear forwards;
 }
 
 @keyframes fallError{
-
-0%{
-transform:translateY(-200px);
-opacity:0;
-}
-
-30%{
-opacity:1;
-}
-
-100%{
-transform:translateY(110vh);
-opacity:0;
-}
-
+0%{transform:translateY(-200px);opacity:0;}
+30%{opacity:1;}
+100%{transform:translateY(110vh);opacity:0;}
 }
 
 </style>
@@ -316,11 +295,11 @@ opacity:0;
 
 <h2>Bhys Chat</h2>
 
-<input id="room" placeholder="Room">
-<button onclick="createRoom()">Create</button>
-<button onclick="joinRoom()">Join</button>
+<input id="room" placeholder="Room name">
+<button onclick="createRoom()">Create Room</button>
+<button onclick="joinRoom()">Join Room</button>
 
-<div id="roomInfo">Not in room</div>
+<div id="roomInfo">Not connected</div>
 
 <h3>Users</h3>
 <div id="userList"></div>
@@ -352,50 +331,33 @@ opacity:0;
 
 /* GLOBAL */
 
-let peer;
-let connections=[];
-let users={};
-let seen=new Set();
-let userAvatar=null;
-let typingTimer;
+let peer
+let connections=[]
+let isHost=false
+let userAvatar=null
+let seen=new Set()
 
 /* SETTINGS */
 
 function toggleSettings(){
-
 settingsPanel.style.display=
-settingsPanel.style.display==="block"?"none":"block";
-
+settingsPanel.style.display==="block"?"none":"block"
 }
 
-function setFont(font){
-
-document.body.style.fontFamily=font;
-localStorage.setItem("font",font);
-
+function setFont(f){
+document.body.style.fontFamily=f
+localStorage.setItem("font",f)
 }
 
-function setTheme(theme){
+function setTheme(t){
 
 document.body.classList.remove(
-"theme-light",
-"theme-green",
-"theme-purple"
-);
+"theme-light","theme-green","theme-purple"
+)
 
-if(theme) document.body.classList.add(theme);
+if(t)document.body.classList.add(t)
 
-localStorage.setItem("theme",theme);
-
-}
-
-function loadSettings(){
-
-const font=localStorage.getItem("font");
-const theme=localStorage.getItem("theme");
-
-if(font) document.body.style.fontFamily=font;
-if(theme) document.body.classList.add(theme);
+localStorage.setItem("theme",t)
 
 }
 
@@ -403,130 +365,120 @@ if(theme) document.body.classList.add(theme);
 
 function saveProfile(){
 
-localStorage.setItem("name",username.value);
-localStorage.setItem("badge",badge.value);
-localStorage.setItem("color",color.value);
-localStorage.setItem("avatar",userAvatar);
-localStorage.setItem("room",room.value);
+localStorage.setItem("name",username.value)
+localStorage.setItem("badge",badge.value)
+localStorage.setItem("color",color.value)
+localStorage.setItem("avatar",userAvatar)
 
 }
 
 function loadProfile(){
 
-username.value=localStorage.getItem("name")||"";
-badge.value=localStorage.getItem("badge")||"";
-color.value=localStorage.getItem("color")||"#60a5fa";
+username.value=localStorage.getItem("name")||""
+badge.value=localStorage.getItem("badge")||""
+color.value=localStorage.getItem("color")||"#60a5fa"
 
-userAvatar=localStorage.getItem("avatar");
-
-const r=localStorage.getItem("room");
-
-if(r){
-room.value=r;
-joinRoom();
-}
+userAvatar=localStorage.getItem("avatar")
 
 }
 
-window.onload=()=>{
-loadSettings();
-loadProfile();
-};
+loadProfile()
 
-/* USER LIST */
+/* SYSTEM MESSAGE */
 
-function updateUsers(){
+function system(msg){
 
-userList.innerHTML="";
+const d=document.createElement("div")
+d.style.opacity=.7
+d.innerText=msg
 
-Object.values(users).forEach(u=>{
-
-const d=document.createElement("div");
-d.innerText=u;
-
-userList.appendChild(d);
-
-});
+chat.appendChild(d)
 
 }
 
-/* SYSTEM */
-
-function system(t){
-
-const d=document.createElement("div");
-
-d.style.opacity=.7;
-d.innerText=t;
-
-chat.appendChild(d);
-
-}
-
-/* ROOM */
+/* CLOSE */
 
 function closePeer(){
 
-if(peer) peer.destroy();
+if(peer)peer.destroy()
 
-connections=[];
-users={};
-
-updateUsers();
+connections=[]
 
 }
+
+/* CREATE ROOM */
 
 function createRoom(){
 
-closePeer();
+closePeer()
 
-peer=new Peer(room.value);
+isHost=true
 
-peer.on("open",()=>{
+peer=new Peer(room.value,{
+host:"peerjs-server.herokuapp.com",
+secure:true,
+port:443
+})
 
-roomInfo.innerText="Room: "+room.value;
+peer.on("open",id=>{
 
-saveProfile();
+roomInfo.innerText="Room: "+id+" (Host)"
 
-});
+})
 
 peer.on("connection",conn=>{
 
-connections.push(conn);
+connections.push(conn)
 
-system("User joined");
+system("User joined")
 
-conn.on("data",handleData);
+conn.on("data",data=>{
+
+handleData(data)
+
+connections.forEach(c=>{
+if(c!==conn)c.send(data)
+})
+
+})
 
 conn.on("close",()=>{
 
-system("User left");
+system("User left")
 
-});
+connections=connections.filter(c=>c!==conn)
 
-});
+})
+
+})
 
 }
 
+/* JOIN */
+
 function joinRoom(){
 
-closePeer();
+closePeer()
 
-peer=new Peer();
+isHost=false
+
+peer=new Peer({
+host:"peerjs-server.herokuapp.com",
+secure:true,
+port:443
+})
 
 peer.on("open",()=>{
 
-const conn=peer.connect(room.value);
+const conn=peer.connect(room.value)
 
-connections.push(conn);
+connections=[conn]
 
-roomInfo.innerText="Room: "+room.value;
+roomInfo.innerText="Room: "+room.value
 
-saveProfile();
+conn.on("data",handleData)
 
-conn.on("data",handleData);
-
-});
+})
 
 }
 
@@ -534,32 +486,24 @@ conn.on("data",handleData);
 
 function addMessage(d){
 
-const div=document.createElement("div");
-div.className="msg";
+const div=document.createElement("div")
+div.className="msg"
 
-let avatarHTML;
+let avatarHTML=d.avatar
+? `<div class="avatar"><img src="${d.avatar}"></div>`
+: `<div class="avatar">${d.name[0]}</div>`
 
-if(d.avatar){
-
-avatarHTML=`<div class="avatar"><img src="${d.avatar}"></div>`;
-
-}else{
-
-avatarHTML=`<div class="avatar">${d.name[0]}</div>`;
-
-}
-
-let fileHTML="";
+let fileHTML=""
 
 if(d.file){
 
 if(d.fileType.startsWith("image/")){
 
-fileHTML=`<img src="${d.file}" style="max-width:200px;cursor:pointer;border-radius:6px;" onclick="zoomImage('${d.file}')">`;
+fileHTML=`<img src="${d.file}" style="max-width:200px;cursor:pointer" onclick="zoomImage('${d.file}')">`
 
 }else{
 
-fileHTML=`<a href="${d.file}" download="${d.fileName}">Download ${d.fileName}</a>`;
+fileHTML=`<a href="${d.file}" download="${d.fileName}">Download ${d.fileName}</a>`
 
 }
 
@@ -572,16 +516,22 @@ ${avatarHTML}
 <div>
 <span style="color:${d.color}">${d.name}</span>
 ${d.badge?`<span class="badge">${d.badge}</span>`:""}
-
 <div>${d.msg||""}</div>
 ${fileHTML}
-
 </div>
 
-`;
+`
 
-chat.appendChild(div);
-chat.scrollTop=chat.scrollHeight;
+chat.appendChild(div)
+chat.scrollTop=chat.scrollHeight
+
+}
+
+/* BROADCAST */
+
+function broadcast(d){
+
+connections.forEach(c=>c.send(d))
 
 }
 
@@ -589,24 +539,18 @@ chat.scrollTop=chat.scrollHeight;
 
 function send(){
 
-const msg=message.value.trim();
-const fileInput=file.files[0];
+const msg=message.value.trim()
+const f=file.files[0]
 
-if(!msg && !fileInput) return;
+if(!msg && !f)return
 
 if(msg.toLowerCase()==="/summon sin"){
 
-triggerSin();
-
-connections.forEach(c=>c.send({type:"sin"}));
-
-return;
+triggerSin()
+broadcast({type:"sin"})
+return
 
 }
-
-checkPrank(username.value);
-
-saveProfile();
 
 const data={
 id:Date.now()+Math.random(),
@@ -616,36 +560,35 @@ color:color.value,
 badge:badge.value,
 avatar:userAvatar,
 msg:msg
-};
+}
 
-if(fileInput){
+if(f){
 
-const r=new FileReader();
+const r=new FileReader()
 
 r.onload=e=>{
 
-data.file=e.target.result;
-data.fileType=fileInput.type;
-data.fileName=fileInput.name;
+data.file=e.target.result
+data.fileType=f.type
+data.fileName=f.name
 
-finish();
-
-};
-
-r.readAsDataURL(fileInput);
-
-}else finish();
-
-function finish(){
-
-addMessage(data);
-
-connections.forEach(c=>c.send(data));
+finish()
 
 }
 
-message.value="";
-file.value="";
+r.readAsDataURL(f)
+
+}else finish()
+
+function finish(){
+
+addMessage(data)
+broadcast(data)
+
+}
+
+message.value=""
+file.value=""
 
 }
 
@@ -653,122 +596,50 @@ file.value="";
 
 function handleData(data){
 
-if(data.type==="typing"){
-
-typingIndicator.innerText=data.name+" is typing...";
-
-clearTimeout(typingTimer);
-
-typingTimer=setTimeout(()=>{
-
-typingIndicator.innerText="";
-
-},2000);
-
-return;
-
-}
-
 if(data.type==="sin"){
-
-triggerSin();
-
-return;
-
+triggerSin()
+return
 }
 
 if(data.type==="msg"){
 
-if(seen.has(data.id)) return;
+if(seen.has(data.id))return
+seen.add(data.id)
 
-seen.add(data.id);
-
-addMessage(data);
-
-}
+addMessage(data)
 
 }
 
-/* TYPING */
+}
 
-message.addEventListener("input",()=>{
-
-connections.forEach(c=>c.send({
-type:"typing",
-name:username.value
-}));
-
-});
-
-/* IMAGE ZOOM */
+/* IMAGE */
 
 function zoomImage(src){
 
-zoomViewer.style.display="flex";
-zoomImg.src=src;
+zoomViewer.style.display="flex"
+zoomImg.src=src
 
 }
 
 function closeZoom(){
 
-zoomViewer.style.display="none";
+zoomViewer.style.display="none"
 
 }
 
 /* AVATAR */
 
-avatarUpload.addEventListener("change",()=>{
+avatarUpload.onchange=()=>{
 
-const file=avatarUpload.files[0];
-if(!file) return;
+const f=avatarUpload.files[0]
+const r=new FileReader()
 
-const reader=new FileReader();
-
-reader.onload=e=>{
-
-userAvatar=e.target.result;
-
-localStorage.setItem("avatar",userAvatar);
-
-};
-
-reader.readAsDataURL(file);
-
-});
-
-/* PRANK NAMES */
-
-function checkPrank(n){
-
-n=n.toLowerCase();
-
-document.body.classList.remove(
-"rainbow-screen",
-"fuzzy-ui",
-"banana-ui"
-);
-
-brodyError.style.display="none";
-
-if(n==="joel") document.body.classList.add("rainbow-screen");
-
-if(n==="thomas") document.body.classList.add("fuzzy-ui");
-
-if(n==="darren") document.body.classList.add("banana-ui");
-
-if(n==="brody"){
-
-brodyError.style.display="block";
-
-let s=[];
-
-for(let i=0;i<400;i++){
-s.push("BRODYBESSY");
+r.onload=e=>{
+userAvatar=e.target.result
+localStorage.setItem("avatar",userAvatar)
 }
 
-brodyText.textContent=s.join("\n");
-
-}
+r.readAsDataURL(f)
 
 }
 
@@ -776,65 +647,55 @@ brodyText.textContent=s.join("\n");
 
 function triggerSin(){
 
-sinOverlay.style.display="block";
-sinOverlay.innerHTML="";
-
-/* animated cracks */
+sinOverlay.style.display="block"
+sinOverlay.innerHTML=""
 
 for(let i=0;i<20;i++){
 
-const crack=document.createElement("div");
+const c=document.createElement("div")
 
-crack.className="crack";
+c.className="crack"
 
-crack.style.top=Math.random()*window.innerHeight+"px";
-crack.style.left="0";
+c.style.top=Math.random()*window.innerHeight+"px"
 
-sinOverlay.appendChild(crack);
+sinOverlay.appendChild(c)
 
 }
 
-/* cascading errors */
+setTimeout(()=>{
+
+let count=0
+
+const i=setInterval(()=>{
+
+const p=document.createElement("div")
+
+p.className="sinPopup"
+
+p.innerText="STRAYAWAYFROMWHATSRIGHT"
+
+p.style.left=Math.random()*window.innerWidth+"px"
+
+document.body.appendChild(p)
+
+setTimeout(()=>p.remove(),2000)
+
+count++
+
+if(count>25)clearInterval(i)
+
+},120)
+
+},1200)
 
 setTimeout(()=>{
 
-let count=0;
+sinOverlay.style.display="none"
+closePeer()
 
-const popupInterval=setInterval(()=>{
+system("Sin shattered the room.")
 
-const pop=document.createElement("div");
-
-pop.className="sinPopup";
-
-pop.innerText="STRAYAWAYFROMWHATSRIGHT";
-
-pop.style.left=Math.random()*window.innerWidth+"px";
-
-document.body.appendChild(pop);
-
-setTimeout(()=>pop.remove(),2000);
-
-count++;
-
-if(count>25){
-clearInterval(popupInterval);
-}
-
-},120);
-
-},1200);
-
-/* close room */
-
-setTimeout(()=>{
-
-sinOverlay.style.display="none";
-
-closePeer();
-
-system("Sin shattered the room.");
-
-},4500);
+},4500)
 
 }
 
@@ -845,15 +706,15 @@ document.addEventListener("keydown",e=>{
 if(e.key==="Enter"){
 
 if(document.activeElement!==message){
-message.focus();
-return;
+message.focus()
+return
 }
 
-send();
+send()
 
 }
 
-});
+})
 
 </script>
 
