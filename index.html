@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Bhys Chat</title>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -21,7 +23,7 @@ height:100vh;
 overflow:hidden;
 }
 
-/* Sidebar */
+/* SIDEBAR */
 
 #sidebar{
 width:260px;
@@ -42,17 +44,15 @@ border:none;
 button{
 background:#2563eb;
 color:white;
-font-weight:bold;
 cursor:pointer;
 }
 
-button:hover{background:#1d4ed8;}
+/* MAIN */
 
 #main{
 flex:1;
 display:flex;
 flex-direction:column;
-min-width:0;
 }
 
 #chat{
@@ -61,7 +61,20 @@ overflow:auto;
 padding:15px;
 }
 
-/* Messages */
+/* ROOM INFO */
+
+#roomInfo{
+padding:6px;
+background:#020617;
+font-size:13px;
+}
+
+#userList{
+font-size:12px;
+margin-top:10px;
+}
+
+/* MESSAGE */
 
 .msg{
 display:flex;
@@ -77,12 +90,14 @@ background:#374151;
 display:flex;
 align-items:center;
 justify-content:center;
-font-weight:bold;
-color:white;
+overflow:hidden;
 }
 
-.name{font-weight:bold;}
-.time{font-size:11px;opacity:.6;margin-left:6px;}
+.avatar img{
+width:100%;
+height:100%;
+object-fit:cover;
+}
 
 .badge{
 background:#374151;
@@ -92,7 +107,7 @@ font-size:11px;
 margin-left:6px;
 }
 
-/* Input */
+/* INPUT */
 
 #inputbar{
 display:flex;
@@ -102,51 +117,196 @@ border-top:1px solid #1f2937;
 background:#111827;
 }
 
-#inputbar input[type="text"]{
+#inputbar input[type=text]{
 flex:1;
 padding:8px;
 border-radius:6px;
 border:none;
-color:white;
 background:#1f2937;
+color:white;
 }
 
-/* Room info */
+/* TYPING */
 
-#roomInfo{
-padding:6px;
-background:#020617;
-font-size:13px;
-border-bottom:1px solid #1f2937;
-}
-
-#userList{
+#typingIndicator{
 font-size:12px;
-margin-top:10px;
+opacity:.6;
+padding:4px 10px;
 }
 
-/* Image Zoom */
+/* IMAGE ZOOM */
 
 #zoomViewer{
 position:fixed;
 inset:0;
-background:rgba(0,0,0,0.85);
+background:rgba(0,0,0,.9);
 display:none;
 align-items:center;
 justify-content:center;
-z-index:999;
 }
 
 #zoomViewer img{
 max-width:90%;
 max-height:90%;
+}
+
+/* SETTINGS */
+
+#settingsBtn{
+position:absolute;
+top:10px;
+right:10px;
+}
+
+#settingsPanel{
+position:fixed;
+top:60px;
+right:20px;
+background:#111827;
+padding:15px;
 border-radius:8px;
+display:none;
+}
+
+/* THEMES */
+
+.theme-light{background:#f4f4f4;color:black;}
+.theme-green{background:#022c22;}
+.theme-purple{background:#1e1b4b;}
+
+/* PRANKS */
+
+.rainbow-screen{
+animation:hue 6s linear infinite;
+}
+
+@keyframes hue{
+0%{filter:hue-rotate(0deg);}
+100%{filter:hue-rotate(360deg);}
+}
+
+.fuzzy-ui{
+filter:grayscale(100%) contrast(200%) blur(1px);
+}
+
+.banana-ui{
+background:#fde047;
+color:#78350f;
+}
+
+/* BRODY */
+
+#brodyError{
+position:fixed;
+inset:0;
+background:#0078d7;
+color:white;
+font-family:Courier New;
+display:none;
+padding:40px;
+overflow:auto;
+z-index:9999;
+}
+
+#brodyText{
+white-space:pre;
+}
+
+/* SIN EVENT */
+
+#sinOverlay{
+position:fixed;
+inset:0;
+pointer-events:none;
+display:none;
+z-index:9000;
+}
+
+.crack{
+position:absolute;
+height:4px;
+background:#ff00aa;
+box-shadow:0 0 15px #ff00aa;
+animation:crackSpread 1.2s forwards;
+}
+
+@keyframes crackSpread{
+
+0%{
+width:0;
+opacity:0;
+}
+
+100%{
+width:100vw;
+opacity:1;
+}
+
+}
+
+.sinPopup{
+position:fixed;
+background:#000;
+color:#ff00aa;
+border:2px solid #ff00aa;
+padding:10px;
+font-family:Courier New;
+z-index:9999;
+animation:fallError 2s linear forwards;
+}
+
+@keyframes fallError{
+
+0%{
+transform:translateY(-200px);
+opacity:0;
+}
+
+30%{
+opacity:1;
+}
+
+100%{
+transform:translateY(110vh);
+opacity:0;
+}
+
 }
 
 </style>
 </head>
 
 <body>
+
+<button id="settingsBtn" onclick="toggleSettings()">⚙</button>
+
+<div id="settingsPanel">
+
+<h3>Font</h3>
+
+<select onchange="setFont(this.value)">
+<option value="Segoe UI">Default</option>
+<option value="Courier New">Terminal</option>
+<option value="Verdana">Verdana</option>
+<option value="Georgia">Georgia</option>
+</select>
+
+<h3>Theme</h3>
+
+<select onchange="setTheme(this.value)">
+<option value="">Default</option>
+<option value="theme-light">Light</option>
+<option value="theme-green">Green</option>
+<option value="theme-purple">Purple</option>
+</select>
+
+</div>
+
+<div id="brodyError">
+<div id="brodyText"></div>
+</div>
+
+<div id="sinOverlay"></div>
 
 <div id="zoomViewer" onclick="closeZoom()">
 <img id="zoomImg">
@@ -156,21 +316,21 @@ border-radius:8px;
 
 <h2>Bhys Chat</h2>
 
-<h3>Room</h3>
-<input id="room" placeholder="Room name">
-<button onclick="createRoom()">Create Room</button>
-<button onclick="joinRoom()">Join Room</button>
+<input id="room" placeholder="Room">
+<button onclick="createRoom()">Create</button>
+<button onclick="joinRoom()">Join</button>
 
-<div id="roomInfo">Not in a room</div>
+<div id="roomInfo">Not in room</div>
 
 <h3>Users</h3>
 <div id="userList"></div>
 
 <h3>Profile</h3>
+
 <input id="username" placeholder="Name">
 <input type="color" id="color" value="#60a5fa">
 <input id="badge" placeholder="Badge">
-<input type="file" id="avatarUpload" accept="image/*">
+<input type="file" id="avatarUpload">
 
 </div>
 
@@ -178,8 +338,10 @@ border-radius:8px;
 
 <div id="chat"></div>
 
+<div id="typingIndicator"></div>
+
 <div id="inputbar">
-<input id="message" type="text" placeholder="Message...">
+<input id="message" placeholder="Message">
 <input type="file" id="file">
 <button onclick="send()">Send</button>
 </div>
@@ -192,57 +354,126 @@ border-radius:8px;
 
 let peer;
 let connections=[];
-let seenMessages=new Set();
-let userAvatar=null;
 let users={};
+let seen=new Set();
+let userAvatar=null;
+let typingTimer;
 
-/* STORAGE */
+/* SETTINGS */
+
+function toggleSettings(){
+
+settingsPanel.style.display=
+settingsPanel.style.display==="block"?"none":"block";
+
+}
+
+function setFont(font){
+
+document.body.style.fontFamily=font;
+localStorage.setItem("font",font);
+
+}
+
+function setTheme(theme){
+
+document.body.classList.remove(
+"theme-light",
+"theme-green",
+"theme-purple"
+);
+
+if(theme) document.body.classList.add(theme);
+
+localStorage.setItem("theme",theme);
+
+}
+
+function loadSettings(){
+
+const font=localStorage.getItem("font");
+const theme=localStorage.getItem("theme");
+
+if(font) document.body.style.fontFamily=font;
+if(theme) document.body.classList.add(theme);
+
+}
+
+/* PROFILE */
 
 function saveProfile(){
-localStorage.setItem("chat_name",username.value);
-localStorage.setItem("chat_color",color.value);
-localStorage.setItem("chat_badge",badge.value);
-localStorage.setItem("chat_avatar",userAvatar);
-localStorage.setItem("chat_room",room.value);
+
+localStorage.setItem("name",username.value);
+localStorage.setItem("badge",badge.value);
+localStorage.setItem("color",color.value);
+localStorage.setItem("avatar",userAvatar);
+localStorage.setItem("room",room.value);
+
 }
 
 function loadProfile(){
 
-username.value=localStorage.getItem("chat_name")||"";
-color.value=localStorage.getItem("chat_color")||"#60a5fa";
-badge.value=localStorage.getItem("chat_badge")||"";
-userAvatar=localStorage.getItem("chat_avatar")||null;
+username.value=localStorage.getItem("name")||"";
+badge.value=localStorage.getItem("badge")||"";
+color.value=localStorage.getItem("color")||"#60a5fa";
 
-const lastRoom=localStorage.getItem("chat_room");
+userAvatar=localStorage.getItem("avatar");
 
-if(lastRoom){
-room.value=lastRoom;
+const r=localStorage.getItem("room");
+
+if(r){
+room.value=r;
 joinRoom();
 }
 
 }
 
-window.onload=loadProfile;
+window.onload=()=>{
+loadSettings();
+loadProfile();
+};
 
 /* USER LIST */
 
 function updateUsers(){
+
 userList.innerHTML="";
 
 Object.values(users).forEach(u=>{
-const div=document.createElement("div");
-div.textContent=u;
-userList.appendChild(div);
+
+const d=document.createElement("div");
+d.innerText=u;
+
+userList.appendChild(d);
+
 });
+
 }
 
-/* ROOM SYSTEM */
+/* SYSTEM */
+
+function system(t){
+
+const d=document.createElement("div");
+
+d.style.opacity=.7;
+d.innerText=t;
+
+chat.appendChild(d);
+
+}
+
+/* ROOM */
 
 function closePeer(){
+
 if(peer) peer.destroy();
+
 connections=[];
 users={};
+
 updateUsers();
+
 }
 
 function createRoom(){
@@ -254,6 +485,7 @@ peer=new Peer(room.value);
 peer.on("open",()=>{
 
 roomInfo.innerText="Room: "+room.value;
+
 saveProfile();
 
 });
@@ -262,10 +494,14 @@ peer.on("connection",conn=>{
 
 connections.push(conn);
 
+system("User joined");
+
 conn.on("data",handleData);
 
-conn.on("open",()=>{
-sendUser(conn);
+conn.on("close",()=>{
+
+system("User left");
+
 });
 
 });
@@ -290,43 +526,28 @@ saveProfile();
 
 conn.on("data",handleData);
 
-conn.on("open",()=>{
-sendUser(conn);
-});
-
 });
 
 }
 
-/* USER SYNC */
-
-function sendUser(conn){
-
-conn.send({
-type:"user",
-name:username.value||"User"
-});
-
-}
-
-function broadcastUser(){
-
-connections.forEach(c=>{
-sendUser(c);
-});
-
-}
-
-/* MESSAGE UI */
+/* MESSAGE */
 
 function addMessage(d){
 
 const div=document.createElement("div");
 div.className="msg";
 
-const avatarHTML=d.avatar
-? `<img src="${d.avatar}" class="avatar">`
-: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`;
+let avatarHTML;
+
+if(d.avatar){
+
+avatarHTML=`<div class="avatar"><img src="${d.avatar}"></div>`;
+
+}else{
+
+avatarHTML=`<div class="avatar">${d.name[0]}</div>`;
+
+}
 
 let fileHTML="";
 
@@ -334,7 +555,7 @@ if(d.file){
 
 if(d.fileType.startsWith("image/")){
 
-fileHTML=`<img src="${d.file}" style="max-width:200px;border-radius:6px;margin-top:5px;cursor:pointer" onclick="zoomImage('${d.file}')">`;
+fileHTML=`<img src="${d.file}" style="max-width:200px;cursor:pointer;border-radius:6px;" onclick="zoomImage('${d.file}')">`;
 
 }else{
 
@@ -349,15 +570,14 @@ div.innerHTML=`
 ${avatarHTML}
 
 <div>
-
-<span class="name" style="color:${d.color}">${d.name}</span>
+<span style="color:${d.color}">${d.name}</span>
 ${d.badge?`<span class="badge">${d.badge}</span>`:""}
 
 <div>${d.msg||""}</div>
-
 ${fileHTML}
 
 </div>
+
 `;
 
 chat.appendChild(div);
@@ -374,6 +594,18 @@ const fileInput=file.files[0];
 
 if(!msg && !fileInput) return;
 
+if(msg.toLowerCase()==="/summon sin"){
+
+triggerSin();
+
+connections.forEach(c=>c.send({type:"sin"}));
+
+return;
+
+}
+
+checkPrank(username.value);
+
 saveProfile();
 
 const data={
@@ -388,16 +620,19 @@ msg:msg
 
 if(fileInput){
 
-const reader=new FileReader();
+const r=new FileReader();
 
-reader.onload=e=>{
+r.onload=e=>{
+
 data.file=e.target.result;
 data.fileType=fileInput.type;
 data.fileName=fileInput.name;
+
 finish();
+
 };
 
-reader.readAsDataURL(fileInput);
+r.readAsDataURL(fileInput);
 
 }else finish();
 
@@ -418,23 +653,65 @@ file.value="";
 
 function handleData(data){
 
-if(data.type==="user"){
+if(data.type==="typing"){
 
-users[data.name]=data.name;
-updateUsers();
+typingIndicator.innerText=data.name+" is typing...";
+
+clearTimeout(typingTimer);
+
+typingTimer=setTimeout(()=>{
+
+typingIndicator.innerText="";
+
+},2000);
+
+return;
+
+}
+
+if(data.type==="sin"){
+
+triggerSin();
+
 return;
 
 }
 
 if(data.type==="msg"){
 
-if(seenMessages.has(data.id)) return;
+if(seen.has(data.id)) return;
 
-seenMessages.add(data.id);
+seen.add(data.id);
 
 addMessage(data);
 
 }
+
+}
+
+/* TYPING */
+
+message.addEventListener("input",()=>{
+
+connections.forEach(c=>c.send({
+type:"typing",
+name:username.value
+}));
+
+});
+
+/* IMAGE ZOOM */
+
+function zoomImage(src){
+
+zoomViewer.style.display="flex";
+zoomImg.src=src;
+
+}
+
+function closeZoom(){
+
+zoomViewer.style.display="none";
 
 }
 
@@ -442,71 +719,126 @@ addMessage(data);
 
 avatarUpload.addEventListener("change",()=>{
 
+const file=avatarUpload.files[0];
+if(!file) return;
+
 const reader=new FileReader();
 
 reader.onload=e=>{
+
 userAvatar=e.target.result;
-saveProfile();
-};
 
-reader.readAsDataURL(avatarUpload.files[0]);
-
-});
-
-/* IMAGE ZOOM */
-
-function zoomImage(src){
-zoomViewer.style.display="flex";
-zoomImg.src=src;
-}
-
-function closeZoom(){
-zoomViewer.style.display="none";
-}
-
-/* PASTE IMAGE */
-
-document.addEventListener("paste",e=>{
-
-const items=e.clipboardData.items;
-
-for(let item of items){
-
-if(item.type.indexOf("image")!==-1){
-
-const file=item.getAsFile();
-
-const reader=new FileReader();
-
-reader.onload=ev=>{
-
-const data={
-id:Date.now(),
-type:"msg",
-name:username.value||"User",
-color:color.value,
-badge:badge.value,
-avatar:userAvatar,
-file:ev.target.result,
-fileType:"image/png",
-fileName:"pasted.png"
-};
-
-addMessage(data);
-
-connections.forEach(c=>c.send(data));
+localStorage.setItem("avatar",userAvatar);
 
 };
 
 reader.readAsDataURL(file);
 
-}
-
-}
-
 });
 
-/* ENTER KEY */
+/* PRANK NAMES */
+
+function checkPrank(n){
+
+n=n.toLowerCase();
+
+document.body.classList.remove(
+"rainbow-screen",
+"fuzzy-ui",
+"banana-ui"
+);
+
+brodyError.style.display="none";
+
+if(n==="joel") document.body.classList.add("rainbow-screen");
+
+if(n==="thomas") document.body.classList.add("fuzzy-ui");
+
+if(n==="darren") document.body.classList.add("banana-ui");
+
+if(n==="brody"){
+
+brodyError.style.display="block";
+
+let s=[];
+
+for(let i=0;i<400;i++){
+s.push("BRODYBESSY");
+}
+
+brodyText.textContent=s.join("\n");
+
+}
+
+}
+
+/* SIN EVENT */
+
+function triggerSin(){
+
+sinOverlay.style.display="block";
+sinOverlay.innerHTML="";
+
+/* animated cracks */
+
+for(let i=0;i<20;i++){
+
+const crack=document.createElement("div");
+
+crack.className="crack";
+
+crack.style.top=Math.random()*window.innerHeight+"px";
+crack.style.left="0";
+
+sinOverlay.appendChild(crack);
+
+}
+
+/* cascading errors */
+
+setTimeout(()=>{
+
+let count=0;
+
+const popupInterval=setInterval(()=>{
+
+const pop=document.createElement("div");
+
+pop.className="sinPopup";
+
+pop.innerText="STRAYAWAYFROMWHATSRIGHT";
+
+pop.style.left=Math.random()*window.innerWidth+"px";
+
+document.body.appendChild(pop);
+
+setTimeout(()=>pop.remove(),2000);
+
+count++;
+
+if(count>25){
+clearInterval(popupInterval);
+}
+
+},120);
+
+},1200);
+
+/* close room */
+
+setTimeout(()=>{
+
+sinOverlay.style.display="none";
+
+closePeer();
+
+system("Sin shattered the room.");
+
+},4500);
+
+}
+
+/* ENTER */
 
 document.addEventListener("keydown",e=>{
 
