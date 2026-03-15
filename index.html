@@ -21,28 +21,26 @@ overflow:hidden;
 transition:filter 0.4s;
 }
 
-/* 🌈 Rainbow Mode */
+/* 🌈 Rainbow */
 .rainbow-mode{
 animation:hueShift 6s linear infinite;
 }
-
 @keyframes hueShift{
 0%{filter:hue-rotate(0deg);}
 100%{filter:hue-rotate(360deg);}
 }
 
-/* ✨ Mystic Mode (NEW EFFECT) */
+/* ✨ Mystic Glow */
 .mystic-mode{
 animation:pulseGlow 2s ease-in-out infinite;
 }
-
 @keyframes pulseGlow{
 0%{box-shadow:0 0 0px #a855f7;}
-50%{box-shadow:0 0 40px #a855f7;}
+50%{box-shadow:0 0 30px #a855f7;}
 100%{box-shadow:0 0 0px #a855f7;}
 }
 
-/* 💙 Brody Blue Error Screen */
+/* 💙 Brody Mode */
 #brodyScreen{
 position:fixed;
 inset:0;
@@ -54,11 +52,7 @@ z-index:9999;
 overflow:hidden;
 display:none;
 }
-
-#brodyScreen.active{
-display:block;
-}
-
+#brodyScreen.active{display:block;}
 #brodySpam{
 white-space:pre;
 font-size:18px;
@@ -148,9 +142,17 @@ border:none;
 }
 
 .system{
-opacity:.7;
+opacity:.8;
 font-style:italic;
 margin:6px 0;
+}
+
+#adminPanel{
+display:none;
+background:#1f2937;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
 }
 </style>
 </head>
@@ -175,12 +177,21 @@ margin:6px 0;
 <input type="color" id="color" value="#60a5fa" />
 <input id="badge" placeholder="Badge" />
 <input type="file" id="avatarUpload" accept="image/*" />
+
+<div id="adminPanel">
+<h3>🛠 Dev Panel</h3>
+<button onclick="clearChat()">Clear Chat</button>
+<button onclick="spamSystem()">Spam System</button>
+<button onclick="toggleRainbow()">Toggle Rainbow</button>
+</div>
+
 </div>
 
 <div id="main">
 <div id="chat"></div>
 <div id="inputbar">
 <input id="message" placeholder="Message..." />
+<input type="file" id="image" accept="image/*" />
 <button onclick="send()">Send</button>
 </div>
 </div>
@@ -192,42 +203,30 @@ let connections=[];
 let seenMessages=new Set();
 let userAvatar=null;
 
-/* 🌈 Rainbow Names */
+/* Modes */
+
 function checkRainbow(name){
-const rainbowNames=[
-"joel",
-"thomas"
-];
-if(rainbowNames.includes(name.toLowerCase())){
+if(["joel","thomas"].includes(name.toLowerCase())){
 document.body.classList.add("rainbow-mode");
 }else{
 document.body.classList.remove("rainbow-mode");
 }
 }
 
-/* ✨ Mystic Effect Names (NEW) */
 function checkMystic(name){
-const mysticNames=[
-"darren",
-"uncle ed",
-"aunt anderson",
-"brodybessy"
-];
-
-if(mysticNames.includes(name.toLowerCase())){
+if(["darren","uncle ed","aunt anderson"].includes(name.toLowerCase())){
 document.body.classList.add("mystic-mode");
 }else{
 document.body.classList.remove("mystic-mode");
 }
 }
 
-/* 💙 Brody Error Mode */
 function checkBrody(name){
 if(name.toLowerCase()==="brody"){
 document.getElementById("brodyScreen").classList.add("active");
-startBrodySpam();
 document.getElementById("main").style.display="none";
 document.getElementById("sidebar").style.display="none";
+startBrodySpam();
 }else{
 document.getElementById("brodyScreen").classList.remove("active");
 document.getElementById("main").style.display="flex";
@@ -236,24 +235,51 @@ document.getElementById("sidebar").style.display="block";
 }
 
 function startBrodySpam(){
-const spamArea=document.getElementById("brodySpam");
 let lines=[];
 for(let i=0;i<400;i++){
 lines.push("BRODYBESSY");
 }
-spamArea.textContent=lines.join("\n");
+document.getElementById("brodySpam").textContent=lines.join("\n");
 }
 
-/* Avatar Upload */
+/* Admin */
+
+function checkAdmin(name){
+if(name.toLowerCase()==="admin123"){
+document.getElementById("adminPanel").style.display="block";
+system("🛠 Dev Mode Enabled");
+}else{
+document.getElementById("adminPanel").style.display="none";
+}
+}
+
+function clearChat(){
+chat.innerHTML="";
+broadcast({type:"system",msg:"Chat cleared by Admin"});
+}
+
+function spamSystem(){
+for(let i=0;i<5;i++){
+system("⚡ Admin Event ⚡");
+broadcast({type:"system",msg:"⚡ Admin Event ⚡"});
+}
+}
+
+function toggleRainbow(){
+document.body.classList.toggle("rainbow-mode");
+}
+
+/* Avatar */
+
 avatarUpload.addEventListener("change",()=>{
 const file=avatarUpload.files[0];
 if(!file) return;
 const reader=new FileReader();
-reader.onload=e=>{
-userAvatar=e.target.result;
-};
+reader.onload=e=>{ userAvatar=e.target.result; };
 reader.readAsDataURL(file);
 });
+
+/* Chat Core */
 
 function system(text){
 const div=document.createElement("div");
@@ -261,80 +287,6 @@ div.className="system";
 div.innerText=text;
 chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
-}
-
-function closePeer(){
-if(peer){ peer.destroy(); }
-connections=[];
-seenMessages.clear();
-}
-
-function createRoom(){
-closePeer();
-const roomName=room.value || Math.random().toString(36).substring(2,8);
-room.value=roomName;
-peer=new Peer(roomName);
-setupPeer();
-system("Room created");
-}
-
-function joinRoom(){
-if(!room.value) return;
-closePeer();
-peer=new Peer();
-setupPeer(()=>{
-const conn=peer.connect(room.value);
-setupConnection(conn);
-});
-}
-
-function setupPeer(onOpen){
-peer.on("open",()=>{ if(onOpen) onOpen(); });
-peer.on("connection",conn=>{ setupConnection(conn); });
-}
-
-function setupConnection(conn){
-connections.push(conn);
-conn.on("data",handleData);
-}
-
-function broadcast(data){
-connections.forEach(c=>c.send(data));
-}
-
-function send(){
-const msgText=message.value.trim();
-if(!msgText) return;
-
-const name=username.value||"User";
-
-checkRainbow(name);
-checkMystic(name);
-checkBrody(name);
-
-const data={
-id:Date.now()+Math.random(),
-type:"msg",
-name:name,
-color:color.value,
-badge:badge.value,
-avatar:userAvatar,
-time:Date.now(),
-msg:msgText
-};
-
-addMessage(data);
-broadcast(data);
-seenMessages.add(data.id);
-
-message.value="";
-}
-
-function handleData(data){
-if(data.type!=="msg") return;
-if(seenMessages.has(data.id)) return;
-seenMessages.add(data.id);
-addMessage(data);
 }
 
 function addMessage(d){
@@ -353,16 +305,67 @@ ${avatarContent}
 <span class="name" style="color:${d.color}">${d.name}</span>
 ${d.badge?`<span class="badge">${d.badge}</span>`:""}
 <span class="time">${time}</span>
-<div>${d.msg}</div>
+<div>${d.msg||""}</div>
+${d.img?`<img src="${d.img}" style="max-width:220px;border-radius:8px;margin-top:5px;">`:""}
 </div>`;
 
 chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-message.addEventListener("keypress",e=>{
-if(e.key==="Enter") send();
-});
+function send(){
+const msgText=message.value.trim();
+if(!msgText && !image.files[0]) return;
+
+const name=username.value||"User";
+
+checkRainbow(name);
+checkMystic(name);
+checkBrody(name);
+checkAdmin(name);
+
+const data={
+id:Date.now()+Math.random(),
+type:"msg",
+name:name,
+color:color.value,
+badge:badge.value,
+avatar:userAvatar,
+time:Date.now(),
+msg:msgText
+};
+
+if(image.files[0]){
+const reader=new FileReader();
+reader.onload=e=>{
+data.img=e.target.result;
+finalize();
+};
+reader.readAsDataURL(image.files[0]);
+}else{
+finalize();
+}
+
+function finalize(){
+addMessage(data);
+broadcast(data);
+seenMessages.add(data.id);
+}
+
+message.value="";
+image.value="";
+}
+
+function handleData(data){
+if(data.type!=="msg") return;
+if(seenMessages.has(data.id)) return;
+seenMessages.add(data.id);
+addMessage(data);
+}
+
+function broadcast(data){
+connections.forEach(c=>c.send(data));
+}
 
 </script>
 
