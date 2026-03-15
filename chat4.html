@@ -1,451 +1,232 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>MiniChat</title>
-
-<style>
-
-body{
-margin:0;
-font-family:Segoe UI;
-background:#1f1f1f;
-color:white;
-display:flex;
-height:100vh;
-}
-
-#sidebar{
-width:230px;
-background:#2b2b2b;
-padding:15px;
-box-sizing:border-box;
-border-right:1px solid #444;
-}
-
-#sidebar input{
-width:100%;
-margin-bottom:8px;
-}
-
-#inviteBox input{
-width:100%;
-}
-
-#main{
-flex:1;
-display:flex;
-flex-direction:column;
-}
-
-#chat{
-flex:1;
-overflow:auto;
-padding:15px;
-}
-
-.msg{
-display:flex;
-margin:8px 0;
-}
-
-.avatar{
-width:36px;
-height:36px;
-border-radius:50%;
-margin-right:10px;
-}
-
-.name{
-font-weight:bold;
-}
-
-.time{
-font-size:11px;
-opacity:.6;
-margin-left:6px;
-}
-
-.badge{
-background:#444;
-padding:2px 6px;
-border-radius:4px;
-font-size:11px;
-margin-left:4px;
-}
-
-#inputbar{
-display:flex;
-padding:10px;
-background:#2b2b2b;
-}
-
-#inputbar input{
-flex:1;
-margin-right:6px;
-}
-
-#users{
-width:170px;
-background:#2b2b2b;
-padding:10px;
-border-left:1px solid #444;
-overflow:auto;
-}
-
-.user{
-display:flex;
-align-items:center;
-margin:6px 0;
-}
-
-.user img{
-width:20px;
-height:20px;
-border-radius:50%;
-margin-right:6px;
-}
-
-.system{
-opacity:.6;
-font-style:italic;
-margin:6px 0;
-}
-
-#typing{
-font-size:12px;
-opacity:.6;
-padding-left:15px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div id="sidebar">
-
-<h3>Room</h3>
-
-<input id="room" placeholder="Room name">
-
-<button onclick="createRoom()">Create</button>
-<button onclick="joinRoom()">Join</button>
-
-<div id="inviteBox"></div>
-
-<h3>Profile</h3>
-
-<input id="username" placeholder="Name">
-<input type="color" id="color">
-<input id="badge" placeholder="Badge">
-<input type="file" id="avatar">
-
-</div>
-
-<div id="main">
-
-<div id="chat"></div>
-
-<div id="typing"></div>
-
-<div id="inputbar">
-
-<input id="message" placeholder="Message">
-
-<input type="file" id="image">
-
-<button onclick="send()">Send</button>
-
-</div>
-
-</div>
-
-<div id="users">
-
-<h3>Online</h3>
-<div id="userList"></div>
-
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <script>
 
-let peer
-let connections=[]
-let users={}
+let peer = null
+let connections = {}
+let isHost = false
 
-const chat=document.getElementById("chat")
+const chat = document.getElementById("chat")
 
 function saveHistory(){
-localStorage.setItem("chatHistory",chat.innerHTML)
+  localStorage.setItem("chatHistory", chat.innerHTML)
 }
 
 function loadHistory(){
-let h=localStorage.getItem("chatHistory")
-if(h) chat.innerHTML=h
+  let h = localStorage.getItem("chatHistory")
+  if(h) chat.innerHTML = h
 }
 
 function createRoom(){
 
-let roomName=room.value||Math.random().toString(36).substring(2,8)
+  if(peer) peer.destroy()
 
-room.value=roomName
+  const roomName = room.value || Math.random().toString(36).substring(2,8)
+  room.value = roomName
 
-peer=new Peer(roomName)
+  isHost = true
+  connections = {}
 
-peer.on("connection",conn=>{
-setup(conn)
-})
+  peer = new Peer(roomName)
 
-system("Room created")
+  peer.on("connection", conn => {
+    setupConnection(conn)
+  })
 
-loadHistory()
+  system("Room created")
 
-let link=location.origin+location.pathname+"?room="+roomName
+  loadHistory()
 
-inviteBox.innerHTML=
-`
-Invite Link
-<input id="inviteLink" value="${link}">
-<button onclick="copyInvite()">Copy</button>
-`
+  const link = location.origin + location.pathname + "?room=" + roomName
 
-}
-
-function copyInvite(){
-
-let i=document.getElementById("inviteLink")
-
-i.select()
-
-document.execCommand("copy")
-
-alert("Invite copied")
-
+  inviteBox.innerHTML = `
+    Invite Link
+    <input id="inviteLink" value="${link}">
+    <button onclick="copyInvite()">Copy</button>
+  `
 }
 
 function joinRoom(){
 
-peer=new Peer()
+  if(peer) peer.destroy()
 
-peer.on("open",()=>{
+  isHost = false
+  connections = {}
 
-let conn=peer.connect(room.value)
+  peer = new Peer()
 
-setup(conn)
+  peer.on("open", id => {
 
-})
+    const conn = peer.connect(room.value)
 
-loadHistory()
+    conn.on("open", () => {
+      setupConnection(conn)
+      conn.send({type:"requestHistory"})
+    })
 
+  })
+
+  loadHistory()
 }
 
-function setup(conn){
+function setupConnection(conn){
 
-connections.push(conn)
+  if(connections[conn.peer]) return
 
-conn.on("data",receive)
+  connections[conn.peer] = conn
 
-conn.on("close",()=>{
-system("User disconnected")
-})
-
+  conn.on("data", receive)
+  conn.on("close", () => {
+    delete connections[conn.peer]
+    system("User disconnected")
+  })
 }
 
-function broadcast(d){
-connections.forEach(c=>c.send(d))
+function broadcast(data){
+  Object.values(connections).forEach(c => {
+    if(c.open) c.send(data)
+  })
 }
 
 function send(){
 
-let name=username.value||"User"
+  const name = username.value || "User"
+  const colorVal = color.value
+  const badgeVal = badge.value
+  const msg = message.value
+  if(!msg.trim()) return
 
-let colorVal=color.value
+  const imgFile = image.files[0]
+  const avatarFile = avatar.files[0]
 
-let badgeVal=badge.value
+  function finalize(avatarData){
 
-let msg=message.value
+    const data = {
+      type:"msg",
+      name,
+      color:colorVal,
+      badge:badgeVal,
+      msg,
+      avatar:avatarData,
+      time:Date.now()
+    }
 
-let img=image.files[0]
+    if(imgFile){
+      const r = new FileReader()
+      r.onload = e => {
+        data.img = e.target.result
+        broadcast(data)
+        addMessage(data)
+      }
+      r.readAsDataURL(imgFile)
+    } else {
+      broadcast(data)
+      addMessage(data)
+    }
+  }
 
-let avatarFile=avatar.files[0]
+  if(avatarFile){
+    const r = new FileReader()
+    r.onload = e => finalize(e.target.result)
+    r.readAsDataURL(avatarFile)
+  } else {
+    finalize(null)
+  }
 
-function finishSend(avatarData){
-
-let data={
-type:"msg",
-name,
-color:colorVal,
-badge:badgeVal,
-msg,
-avatar:avatarData,
-time:Date.now()
+  message.value = ""
+  image.value = ""
 }
 
-if(img){
+function receive(data){
 
-let r=new FileReader()
+  if(data.type === "msg"){
+    addMessage(data)
+  }
 
-r.onload=e=>{
+  if(data.type === "typing"){
+    typing.innerText = data.name + " is typing..."
+    clearTimeout(window.typingTimeout)
+    window.typingTimeout = setTimeout(()=>typing.innerText="",1000)
+  }
 
-data.img=e.target.result
+  if(data.type === "requestHistory" && isHost){
+    const history = chat.innerHTML
+    data.type = "history"
+    broadcast({type:"history", content:history})
+  }
 
-broadcast(data)
-
-addMessage(data)
-
-}
-
-r.readAsDataURL(img)
-
-}else{
-
-broadcast(data)
-
-addMessage(data)
-
-}
-
-}
-
-if(avatarFile){
-
-let r=new FileReader()
-
-r.onload=e=>finishSend(e.target.result)
-
-r.readAsDataURL(avatarFile)
-
-}else{
-
-finishSend(null)
-
-}
-
-message.value=""
-image.value=""
-
-}
-
-function receive(d){
-
-if(d.type==="msg") addMessage(d)
-
-if(d.type==="typing"){
-
-typing.innerText=d.name+" is typing..."
-
-setTimeout(()=>typing.innerText="",1200)
-
-}
-
-if(d.type==="namechange"){
-
-system(d.old+" changed name to "+d.new)
-
-}
-
+  if(data.type === "history"){
+    chat.innerHTML = data.content
+  }
 }
 
 function addMessage(d){
 
-let div=document.createElement("div")
+  const div = document.createElement("div")
+  div.className = "msg"
 
-div.className="msg"
+  const time = new Date(d.time).toLocaleTimeString()
 
-let time=new Date(d.time).toLocaleTimeString()
+  const avatarImg = d.avatar || "https://i.imgur.com/6VBx3io.png"
 
-let avatarImg=d.avatar||"https://i.imgur.com/6VBx3io.png"
+  const msg = d.msg.replace(/(https?:\/\/[^\s]+)/g,
+    '<a href="$1" target="_blank">$1</a>')
 
-let msg=d.msg.replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank">$1</a>')
+  div.innerHTML = `
+    <img class="avatar" src="${avatarImg}">
+    <div>
+      <span class="name" style="color:${d.color}">
+        ${d.name}
+      </span>
+      ${d.badge ? `<span class="badge">${d.badge}</span>` : ""}
+      <span class="time">${time}</span>
+      <div>${msg}</div>
+      ${d.img ? `<img src="${d.img}" width="220">` : ""}
+    </div>
+  `
 
-div.innerHTML=
-
-`
-<img class="avatar" src="${avatarImg}">
-
-<div>
-
-<span class="name" style="color:${d.color}">
-${d.name}
-</span>
-
-${d.badge?'<span class="badge">'+d.badge+'</span>':''}
-
-<span class="time">${time}</span>
-
-<div>${msg}</div>
-
-${d.img?'<img src="'+d.img+'" width="220">':""}
-
-</div>
-`
-
-chat.appendChild(div)
-
-chat.scrollTop=chat.scrollHeight
-
-saveHistory()
-
+  chat.appendChild(div)
+  chat.scrollTop = chat.scrollHeight
+  saveHistory()
 }
 
-function system(t){
+function system(text){
 
-let div=document.createElement("div")
+  const div = document.createElement("div")
+  div.className = "system"
+  div.innerText = text
 
-div.className="system"
-
-div.innerText=t
-
-chat.appendChild(div)
-
-saveHistory()
-
+  chat.appendChild(div)
+  chat.scrollTop = chat.scrollHeight
+  saveHistory()
 }
 
-message.addEventListener("input",()=>{
+let typingCooldown = false
 
-broadcast({
-type:"typing",
-name:username.value||"User"
+message.addEventListener("input", () => {
+
+  if(typingCooldown) return
+  typingCooldown = true
+
+  broadcast({
+    type:"typing",
+    name:username.value || "User"
+  })
+
+  setTimeout(()=>typingCooldown=false,500)
 })
 
+message.addEventListener("keypress", e=>{
+  if(e.key === "Enter") send()
 })
 
-username.addEventListener("change",()=>{
-
-broadcast({
-type:"namechange",
-old:"User",
-new:username.value
-})
-
-})
-
-chat.addEventListener("dragover",e=>e.preventDefault())
-
-chat.addEventListener("drop",e=>{
-
-e.preventDefault()
-
-image.files=e.dataTransfer.files
-
-})
-
-message.addEventListener("keypress",e=>{
-if(e.key==="Enter") send()
-})
-
-const params=new URLSearchParams(location.search)
+const params = new URLSearchParams(location.search)
 
 if(params.get("room")){
-room.value=params.get("room")
-joinRoom()
+  room.value = params.get("room")
+  joinRoom()
 }
 
-</script>
+loadHistory()
 
-</body>
-</html>
+</script>
