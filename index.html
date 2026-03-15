@@ -1,70 +1,35 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bhys Chat</title>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <style>
-*{box-sizing:border-box;}
+
+*{box-sizing:border-box}
 
 body{
 margin:0;
-font-family:Segoe UI, sans-serif;
+font-family:Segoe UI,sans-serif;
 background:#0f172a;
 color:white;
 display:flex;
 height:100vh;
 overflow:hidden;
-transition:filter 0.4s;
 }
 
-/* 🌈 Rainbow */
-.rainbow-mode{
-animation:hueShift 6s linear infinite;
-}
-@keyframes hueShift{
-0%{filter:hue-rotate(0deg);}
-100%{filter:hue-rotate(360deg);}
-}
-
-/* ✨ Mystic Glow */
-.mystic-mode{
-animation:pulseGlow 2s ease-in-out infinite;
-}
-@keyframes pulseGlow{
-0%{box-shadow:0 0 0px #a855f7;}
-50%{box-shadow:0 0 30px #a855f7;}
-100%{box-shadow:0 0 0px #a855f7;}
-}
-
-/* 💙 Brody Mode */
-#brodyScreen{
-position:fixed;
-inset:0;
-background:#0078d7;
-color:white;
-font-family:"Lucida Console","Courier New",monospace;
-padding:30px;
-z-index:9999;
-overflow:hidden;
-display:none;
-}
-#brodyScreen.active{display:block;}
-#brodySpam{
-white-space:pre;
-font-size:18px;
-line-height:22px;
-}
+/* SIDEBAR */
 
 #sidebar{
 width:260px;
 background:#111827;
 padding:15px;
-overflow:auto;
 border-right:1px solid #1f2937;
+overflow:auto;
 }
 
 #sidebar input,#sidebar button{
@@ -76,18 +41,20 @@ border:none;
 }
 
 button{
-cursor:pointer;
 background:#2563eb;
 color:white;
 font-weight:bold;
+cursor:pointer;
 }
-button:hover{background:#1d4ed8;}
+
+button:hover{background:#1d4ed8}
+
+/* MAIN */
 
 #main{
 flex:1;
 display:flex;
 flex-direction:column;
-min-width:0;
 }
 
 #chat{
@@ -95,6 +62,8 @@ flex:1;
 overflow:auto;
 padding:15px;
 }
+
+/* MESSAGE */
 
 .msg{
 display:flex;
@@ -111,12 +80,9 @@ display:flex;
 align-items:center;
 justify-content:center;
 font-weight:bold;
-color:white;
-object-fit:cover;
 }
 
-.name{font-weight:bold;}
-.time{font-size:11px;opacity:.6;margin-left:6px;}
+.name{font-weight:bold}
 
 .badge{
 background:#374151;
@@ -126,6 +92,14 @@ font-size:11px;
 margin-left:6px;
 }
 
+.system{
+opacity:.7;
+font-style:italic;
+margin:6px 0;
+}
+
+/* INPUT */
+
 #inputbar{
 display:flex;
 gap:6px;
@@ -134,18 +108,16 @@ border-top:1px solid #1f2937;
 background:#111827;
 }
 
-#inputbar input{
+#inputbar input[type="text"]{
 flex:1;
 padding:8px;
 border-radius:6px;
 border:none;
+background:#1f2937;
+color:white;
 }
 
-.system{
-opacity:.8;
-font-style:italic;
-margin:6px 0;
-}
+/* ADMIN PANEL */
 
 #adminPanel{
 display:none;
@@ -154,220 +126,580 @@ padding:10px;
 margin-top:10px;
 border-radius:8px;
 }
+
+/* GOOBER CLICKER */
+
+#gooberGame{
+
+position:fixed;
+bottom:20px;
+right:20px;
+
+width:120px;
+
+background:#111827;
+border:1px solid #1f2937;
+border-radius:8px;
+
+font-size:11px;
+z-index:1000;
+
+}
+
+#gooberHeader{
+
+background:#1f2937;
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+padding:4px;
+cursor:move;
+
+}
+
+#gooberHeader button{
+
+background:none;
+border:none;
+color:white;
+cursor:pointer;
+
+}
+
+#gooberBody{
+
+padding:6px;
+text-align:center;
+
+}
+
+#goober{
+
+width:40px;
+height:40px;
+
+background:#374151;
+
+border-radius:6px;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+font-size:18px;
+
+margin:auto;
+cursor:pointer;
+
+transition:transform .1s;
+
+}
+
+#goober.pop{
+transform:scale(1.2)
+}
+
+#gooberGame button{
+width:100%;
+font-size:10px;
+margin-top:3px;
+}
+
+.rainbowGoober{
+animation:hue 3s linear infinite
+}
+
+@keyframes hue{
+0%{filter:hue-rotate(0deg)}
+100%{filter:hue-rotate(360deg)}
+}
+
+/* BRODY ERROR */
+
+#brodyScreen{
+position:fixed;
+inset:0;
+background:#0078d7;
+color:white;
+font-family:"Lucida Console","Courier New",monospace;
+padding:30px;
+display:none;
+z-index:9999;
+overflow:hidden;
+}
+
 </style>
 </head>
 
 <body>
 
-<div id="brodyScreen">
-<div id="brodySpam"></div>
-</div>
+<div id="brodyScreen"></div>
 
 <div id="sidebar">
+
 <h2>Bhys Chat</h2>
 
 <h3>Room</h3>
-<input id="room" placeholder="Room name" />
+<input id="room" placeholder="Room name">
 <button onclick="createRoom()">Create Room</button>
 <button onclick="joinRoom()">Join Room</button>
-<div id="inviteBox"></div>
 
 <h3>Profile</h3>
-<input id="username" placeholder="Name" />
-<input type="color" id="color" value="#60a5fa" />
-<input id="badge" placeholder="Badge" />
-<input type="file" id="avatarUpload" accept="image/*" />
+<input id="username" placeholder="Name">
+<input type="color" id="color" value="#60a5fa">
+<input id="badge" placeholder="Badge">
+<input type="file" id="avatarUpload">
+
+<button onclick="applyGooberBadge()">Use Goober Badge</button>
 
 <div id="adminPanel">
-<h3>🛠 Dev Panel</h3>
+
+<h3>Dev Panel</h3>
+
 <button onclick="clearChat()">Clear Chat</button>
-<button onclick="spamSystem()">Spam System</button>
-<button onclick="toggleRainbow()">Toggle Rainbow</button>
+<button onclick="spamSystem()">Spam Event</button>
+
+<h4>Goober Hacks</h4>
+
+<button onclick="hackGoobers(1000)">+1,000 Goobers</button>
+<button onclick="hackGoobers(10000)">+10,000 Goobers</button>
+<button onclick="maxGoober()">Max Upgrades</button>
+<button onclick="forceRebirth()">Instant Rebirth</button>
+<button onclick="resetGoober()">Reset Goobers</button>
+
 </div>
 
 </div>
 
 <div id="main">
+
 <div id="chat"></div>
+
 <div id="inputbar">
-<input id="message" placeholder="Message..." />
-<input type="file" id="image" accept="image/*" />
+<input id="message" type="text" placeholder="Message...">
+<input type="file" id="image">
 <button onclick="send()">Send</button>
 </div>
+
+</div>
+
+<!-- GOOBER GAME -->
+
+<div id="gooberGame">
+
+<div id="gooberHeader">
+<span>Goober</span>
+<button id="collapseBtn">−</button>
+</div>
+
+<div id="gooberBody">
+
+<div id="goober">:)</div>
+
+<div id="gooberCount">0</div>
+
+<button onclick="upgradeClick()">
++Click (<span id="priceClick"></span>)
+</button>
+
+<button onclick="upgradeAuto()">
+Auto (<span id="priceAuto"></span>)
+</button>
+
+<button onclick="upgradeRainbow()">
+Rainbow (<span id="priceRainbow"></span>)
+</button>
+
+<button onclick="rebirth()" id="rebirthBtn">
+Rebirth (100000)
+</button>
+
+<div id="rebirthCount"></div>
+
+</div>
+
 </div>
 
 <script>
 
-let peer;
-let connections=[];
-let seenMessages=new Set();
-let userAvatar=null;
+/* ================= CHAT ================= */
 
-/* Modes */
-
-function checkRainbow(name){
-if(["joel","thomas"].includes(name.toLowerCase())){
-document.body.classList.add("rainbow-mode");
-}else{
-document.body.classList.remove("rainbow-mode");
-}
-}
-
-function checkMystic(name){
-if(["darren","uncle ed","aunt anderson"].includes(name.toLowerCase())){
-document.body.classList.add("mystic-mode");
-}else{
-document.body.classList.remove("mystic-mode");
-}
-}
-
-function checkBrody(name){
-if(name.toLowerCase()==="brody"){
-document.getElementById("brodyScreen").classList.add("active");
-document.getElementById("main").style.display="none";
-document.getElementById("sidebar").style.display="none";
-startBrodySpam();
-}else{
-document.getElementById("brodyScreen").classList.remove("active");
-document.getElementById("main").style.display="flex";
-document.getElementById("sidebar").style.display="block";
-}
-}
-
-function startBrodySpam(){
-let lines=[];
-for(let i=0;i<400;i++){
-lines.push("BRODYBESSY");
-}
-document.getElementById("brodySpam").textContent=lines.join("\n");
-}
-
-/* Admin */
-
-function checkAdmin(name){
-if(name.toLowerCase()==="admin123"){
-document.getElementById("adminPanel").style.display="block";
-system("🛠 Dev Mode Enabled");
-}else{
-document.getElementById("adminPanel").style.display="none";
-}
-}
-
-function clearChat(){
-chat.innerHTML="";
-broadcast({type:"system",msg:"Chat cleared by Admin"});
-}
-
-function spamSystem(){
-for(let i=0;i<5;i++){
-system("⚡ Admin Event ⚡");
-broadcast({type:"system",msg:"⚡ Admin Event ⚡"});
-}
-}
-
-function toggleRainbow(){
-document.body.classList.toggle("rainbow-mode");
-}
-
-/* Avatar */
-
-avatarUpload.addEventListener("change",()=>{
-const file=avatarUpload.files[0];
-if(!file) return;
-const reader=new FileReader();
-reader.onload=e=>{ userAvatar=e.target.result; };
-reader.readAsDataURL(file);
-});
-
-/* Chat Core */
+let peer
+let connections=[]
+let seenMessages=new Set()
+let userAvatar=null
 
 function system(text){
-const div=document.createElement("div");
-div.className="system";
-div.innerText=text;
-chat.appendChild(div);
-chat.scrollTop=chat.scrollHeight;
+
+let div=document.createElement("div")
+div.className="system"
+div.innerText=text
+
+chat.appendChild(div)
+chat.scrollTop=chat.scrollHeight
+
 }
 
 function addMessage(d){
-const div=document.createElement("div");
-div.className="msg";
 
-const time=new Date(d.time).toLocaleTimeString();
+let div=document.createElement("div")
+div.className="msg"
 
-const avatarContent=d.avatar
+let avatarHTML=d.avatar
 ? `<img src="${d.avatar}" class="avatar">`
-: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`;
+: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`
 
 div.innerHTML=`
-${avatarContent}
-<div>
-<span class="name" style="color:${d.color}">${d.name}</span>
-${d.badge?`<span class="badge">${d.badge}</span>`:""}
-<span class="time">${time}</span>
-<div>${d.msg||""}</div>
-${d.img?`<img src="${d.img}" style="max-width:220px;border-radius:8px;margin-top:5px;">`:""}
-</div>`;
 
-chat.appendChild(div);
-chat.scrollTop=chat.scrollHeight;
+${avatarHTML}
+
+<div>
+
+<span class="name" style="color:${d.color}">
+${d.name}
+</span>
+
+${d.badge?`<span class="badge">${d.badge}</span>`:""}
+
+<div>${d.msg||""}</div>
+
+${d.img?`<img src="${d.img}" style="max-width:200px;margin-top:4px;border-radius:6px;">`:""}
+
+</div>
+`
+
+chat.appendChild(div)
+chat.scrollTop=chat.scrollHeight
+
 }
 
 function send(){
-const msgText=message.value.trim();
-if(!msgText && !image.files[0]) return;
 
-const name=username.value||"User";
+let msgText=message.value.trim()
 
-checkRainbow(name);
-checkMystic(name);
-checkBrody(name);
-checkAdmin(name);
+if(!msgText && !image.files[0]) return
 
-const data={
+let name=username.value||"User"
+
+if(name.toLowerCase()==="admin123"){
+adminPanel.style.display="block"
+system("Dev mode enabled")
+}
+
+if(name.toLowerCase()==="brody"){
+
+brodyScreen.style.display="block"
+
+let spam=""
+
+for(let i=0;i<200;i++){
+spam+="BRODYBESSY\n"
+}
+
+brodyScreen.innerText=spam
+
+return
+
+}
+
+let data={
 id:Date.now()+Math.random(),
 type:"msg",
 name:name,
 color:color.value,
 badge:badge.value,
 avatar:userAvatar,
-time:Date.now(),
 msg:msgText
-};
+}
 
 if(image.files[0]){
-const reader=new FileReader();
+
+let reader=new FileReader()
+
 reader.onload=e=>{
-data.img=e.target.result;
-finalize();
-};
-reader.readAsDataURL(image.files[0]);
+data.img=e.target.result
+finish()
+}
+
+reader.readAsDataURL(image.files[0])
+
+}else finish()
+
+function finish(){
+
+addMessage(data)
+connections.forEach(c=>c.send(data))
+seenMessages.add(data.id)
+
+}
+
+message.value=""
+image.value=""
+
+}
+
+/* ================= GOOBER ================= */
+
+let goobers=0
+let perClick=1
+let auto=0
+let rainbow=false
+let rebirths=0
+
+let priceClick=10
+let priceAuto=25
+let priceRainbow=50
+
+function updateGooberUI(){
+
+gooberCount.innerText=goobers+" goobers"
+
+priceClick.innerText=priceClick
+priceAuto.innerText=priceAuto
+priceRainbow.innerText=priceRainbow
+
+rebirthCount.innerText="Rebirths: "+rebirths
+
+rebirthBtn.disabled=goobers<100000
+
+}
+
+goober.onclick=()=>{
+
+goobers+=perClick
+
+goober.classList.add("pop")
+setTimeout(()=>goober.classList.remove("pop"),100)
+
+updateGooberUI()
+saveGoober()
+
+}
+
+function upgradeClick(){
+
+if(goobers<priceClick) return
+
+goobers-=priceClick
+perClick++
+
+priceClick=Math.floor(priceClick*1.5)
+
+updateGooberUI()
+saveGoober()
+
+}
+
+function upgradeAuto(){
+
+if(goobers<priceAuto) return
+
+goobers-=priceAuto
+auto++
+
+priceAuto=Math.floor(priceAuto*1.6)
+
+updateGooberUI()
+saveGoober()
+
+}
+
+function upgradeRainbow(){
+
+if(goobers<priceRainbow) return
+
+goobers-=priceRainbow
+rainbow=true
+
+goober.classList.add("rainbowGoober")
+
+updateGooberUI()
+saveGoober()
+
+}
+
+function rebirth(){
+
+if(goobers<100000) return
+
+rebirths++
+
+goobers=0
+perClick=1
+auto=0
+rainbow=false
+
+priceClick=10
+priceAuto=25
+priceRainbow=50
+
+goober.classList.remove("rainbowGoober")
+
+updateGooberUI()
+saveGoober()
+
+}
+
+setInterval(()=>{
+
+if(auto>0){
+
+goobers+=auto
+
+updateGooberUI()
+saveGoober()
+
+}
+
+},1000)
+
+/* ADMIN GOOBER HACKS */
+
+function hackGoobers(amount){
+
+goobers+=amount
+
+updateGooberUI()
+saveGoober()
+
+}
+
+function maxGoober(){
+
+perClick=100
+auto=100
+rainbow=true
+
+goober.classList.add("rainbowGoober")
+
+updateGooberUI()
+saveGoober()
+
+}
+
+function forceRebirth(){
+
+rebirths++
+
+goobers=0
+
+updateGooberUI()
+saveGoober()
+
+}
+
+function resetGoober(){
+
+goobers=0
+perClick=1
+auto=0
+rainbow=false
+rebirths=0
+
+updateGooberUI()
+saveGoober()
+
+}
+
+/* SAVE */
+
+function saveGoober(){
+
+localStorage.setItem("gooberSave",JSON.stringify({
+goobers,perClick,auto,rainbow,rebirths,
+priceClick,priceAuto,priceRainbow
+}))
+
+}
+
+function loadGoober(){
+
+let save=JSON.parse(localStorage.getItem("gooberSave"))
+
+if(!save) return
+
+Object.assign(window,save)
+
+}
+
+loadGoober()
+updateGooberUI()
+
+/* GOOBER BADGE */
+
+function applyGooberBadge(){
+
+badge.value="Goobers:"+goobers
+
+}
+
+/* DRAGGABLE */
+
+let widget=document.getElementById("gooberGame")
+let header=document.getElementById("gooberHeader")
+
+let offsetX=0
+let offsetY=0
+let dragging=false
+
+header.onmousedown=e=>{
+
+dragging=true
+
+offsetX=e.clientX-widget.offsetLeft
+offsetY=e.clientY-widget.offsetTop
+
+}
+
+document.onmousemove=e=>{
+
+if(!dragging) return
+
+widget.style.left=e.clientX-offsetX+"px"
+widget.style.top=e.clientY-offsetY+"px"
+
+}
+
+document.onmouseup=()=>{
+
+dragging=false
+
+localStorage.setItem("gooberPos",JSON.stringify({
+x:widget.style.left,
+y:widget.style.top
+}))
+
+}
+
+let pos=JSON.parse(localStorage.getItem("gooberPos"))
+
+if(pos){
+
+widget.style.left=pos.x
+widget.style.top=pos.y
+
+}
+
+/* COLLAPSE */
+
+collapseBtn.onclick=()=>{
+
+if(gooberBody.style.display==="none"){
+
+gooberBody.style.display="block"
+collapseBtn.innerText="−"
+
 }else{
-finalize();
+
+gooberBody.style.display="none"
+collapseBtn.innerText="+"
+
 }
 
-function finalize(){
-addMessage(data);
-broadcast(data);
-seenMessages.add(data.id);
-}
-
-message.value="";
-image.value="";
-}
-
-function handleData(data){
-if(data.type!=="msg") return;
-if(seenMessages.has(data.id)) return;
-seenMessages.add(data.id);
-addMessage(data);
-}
-
-function broadcast(data){
-connections.forEach(c=>c.send(data));
 }
 
 </script>
-
 </body>
 </html>
+```
