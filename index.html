@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,20 +8,20 @@
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <style>
-
-*{box-sizing:border-box}
+*{box-sizing:border-box;}
 
 body{
 margin:0;
-font-family:Segoe UI,sans-serif;
+font-family:Segoe UI, sans-serif;
 background:#0f172a;
 color:white;
 display:flex;
 height:100vh;
 overflow:hidden;
+transition:filter .4s;
 }
 
-/* SIDEBAR */
+/* Sidebar */
 
 #sidebar{
 width:260px;
@@ -47,14 +46,13 @@ font-weight:bold;
 cursor:pointer;
 }
 
-button:hover{background:#1d4ed8}
-
-/* MAIN */
+button:hover{background:#1d4ed8;}
 
 #main{
 flex:1;
 display:flex;
 flex-direction:column;
+min-width:0;
 }
 
 #chat{
@@ -62,6 +60,8 @@ flex:1;
 overflow:auto;
 padding:15px;
 }
+
+/* Messages */
 
 .msg{
 display:flex;
@@ -78,9 +78,11 @@ display:flex;
 align-items:center;
 justify-content:center;
 font-weight:bold;
+color:white;
 }
 
-.name{font-weight:bold}
+.name{font-weight:bold;}
+.time{font-size:11px;opacity:.6;margin-left:6px;}
 
 .badge{
 background:#374151;
@@ -96,7 +98,7 @@ font-style:italic;
 margin:6px 0;
 }
 
-/* INPUT */
+/* Input */
 
 #inputbar{
 display:flex;
@@ -111,100 +113,32 @@ flex:1;
 padding:8px;
 border-radius:6px;
 border:none;
-background:#1f2937;
 color:white;
-}
-
-/* ADMIN PANEL */
-
-#adminPanel{
-display:none;
 background:#1f2937;
-padding:10px;
-margin-top:10px;
-border-radius:8px;
 }
 
-/* GOOBER WINDOW */
+/* Secret Modes */
 
-#gooberWindow{
-
-position:absolute;
-top:120px;
-left:300px;
-
-width:180px;
-height:auto;
-
-background:#111827;
-border:1px solid #1f2937;
-border-radius:8px;
-
-resize:both;
-overflow:auto;
-
-z-index:1000;
-
+.rainbow-mode{
+animation:hueShift 6s linear infinite;
 }
 
-#gooberHeader{
-
-background:#1f2937;
-padding:5px;
-cursor:move;
-
-display:flex;
-justify-content:space-between;
-align-items:center;
-
+@keyframes hueShift{
+0%{filter:hue-rotate(0deg);}
+100%{filter:hue-rotate(360deg);}
 }
 
-#gooberBody{
-padding:6px;
-text-align:center;
-font-size:12px;
+.mystic-mode{
+animation:pulseGlow 2s infinite;
 }
 
-#goober{
-
-width:50px;
-height:50px;
-background:#374151;
-border-radius:6px;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-margin:auto;
-
-font-size:20px;
-
-cursor:pointer;
-transition:transform .1s;
-
+@keyframes pulseGlow{
+0%{box-shadow:0 0 0px purple;}
+50%{box-shadow:0 0 30px purple;}
+100%{box-shadow:0 0 0px purple;}
 }
 
-#goober.pop{
-transform:scale(1.25)
-}
-
-#gooberWindow button{
-width:100%;
-margin-top:4px;
-font-size:11px;
-}
-
-.rainbowGoober{
-animation:hue 3s linear infinite
-}
-
-@keyframes hue{
-0%{filter:hue-rotate(0deg)}
-100%{filter:hue-rotate(360deg)}
-}
-
-/* BRODY SCREEN */
+/* Brody screen */
 
 #brodyScreen{
 position:fixed;
@@ -218,12 +152,32 @@ z-index:9999;
 overflow:hidden;
 }
 
+#brodyScreen.active{display:block;}
+
+#brodySpam{
+white-space:pre;
+font-size:18px;
+line-height:22px;
+}
+
+/* Admin panel */
+
+#adminPanel{
+display:none;
+background:#1f2937;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+}
+
 </style>
 </head>
 
 <body>
 
-<div id="brodyScreen"></div>
+<div id="brodyScreen">
+<div id="brodySpam"></div>
+</div>
 
 <div id="sidebar">
 
@@ -238,25 +192,13 @@ overflow:hidden;
 <input id="username" placeholder="Name">
 <input type="color" id="color" value="#60a5fa">
 <input id="badge" placeholder="Badge">
-<input type="file" id="avatarUpload">
-
-<button onclick="applyGooberBadge()">Use Goober Badge</button>
+<input type="file" id="avatarUpload" accept="image/*">
 
 <div id="adminPanel">
-
 <h3>Dev Panel</h3>
-
 <button onclick="clearChat()">Clear Chat</button>
 <button onclick="spamSystem()">Spam Event</button>
-
-<h4>Goober Hacks</h4>
-
-<button onclick="hackGoobers(1000)">+1,000 Goobers</button>
-<button onclick="hackGoobers(10000)">+10,000 Goobers</button>
-<button onclick="maxGoober()">Max Upgrades</button>
-<button onclick="forceRebirth()">Instant Rebirth</button>
-<button onclick="resetGoober()">Reset Goobers</button>
-
+<button onclick="toggleRainbow()">Toggle Rainbow</button>
 </div>
 
 </div>
@@ -267,346 +209,295 @@ overflow:hidden;
 
 <div id="inputbar">
 <input id="message" type="text" placeholder="Message...">
-<input type="file" id="image">
+<input type="file" id="image" accept="image/*">
 <button onclick="send()">Send</button>
-</div>
-
-</div>
-
-<!-- GOOBER WINDOW -->
-
-<div id="gooberWindow">
-
-<div id="gooberHeader">
-Goober Clicker
-<button onclick="toggleGoober()">–</button>
-</div>
-
-<div id="gooberBody">
-
-<div id="goober">:)</div>
-
-<div id="gooberCount">0</div>
-
-<button onclick="upgradeClick()">
-+Click (<span id="priceClick"></span>)
-</button>
-
-<button onclick="upgradeAuto()">
-Auto (<span id="priceAuto"></span>)
-</button>
-
-<button onclick="upgradeRainbow()">
-Rainbow (<span id="priceRainbow"></span>)
-</button>
-
-<button onclick="rebirth()" id="rebirthBtn">
-Rebirth (100000)
-</button>
-
-<div id="rebirthCount"></div>
-
 </div>
 
 </div>
 
 <script>
 
-/* ENTER KEY LOGIC */
+let peer;
+let connections=[];
+let seenMessages=new Set();
+let userAvatar=null;
+
+/* ENTER KEY */
 
 document.addEventListener("keydown",e=>{
 
 if(e.key==="Enter"){
 
 if(document.activeElement!==message){
-message.focus()
-return
+message.focus();
+return;
 }
 
 if(message.value.trim()!==""){
-send()
+send();
 }
 
 }
 
-})
+});
 
-/* CHAT */
-
-let peer
-let connections=[]
-let seenMessages=new Set()
+/* SYSTEM MESSAGE */
 
 function system(text){
+const div=document.createElement("div");
+div.className="system";
+div.innerText=text;
+chat.appendChild(div);
+chat.scrollTop=chat.scrollHeight;
+}
 
-let div=document.createElement("div")
-div.className="system"
-div.innerText=text
+/* MODES */
 
-chat.appendChild(div)
-chat.scrollTop=chat.scrollHeight
+function checkRainbow(name){
+if(["joel","thomas"].includes(name.toLowerCase())){
+document.body.classList.add("rainbow-mode");
+}else{
+document.body.classList.remove("rainbow-mode");
+}
+}
+
+function checkMystic(name){
+if(["darren","uncle ed","aunt anderson"].includes(name.toLowerCase())){
+document.body.classList.add("mystic-mode");
+}else{
+document.body.classList.remove("mystic-mode");
+}
+}
+
+function checkBrody(name){
+
+if(name.toLowerCase()==="brody"){
+
+document.getElementById("brodyScreen").classList.add("active");
+document.getElementById("main").style.display="none";
+document.getElementById("sidebar").style.display="none";
+
+startBrodySpam();
+
+}else{
+
+document.getElementById("brodyScreen").classList.remove("active");
+document.getElementById("main").style.display="flex";
+document.getElementById("sidebar").style.display="block";
 
 }
 
-/* ROOMS */
+}
+
+function startBrodySpam(){
+let lines=[];
+for(let i=0;i<400;i++){
+lines.push("BRODYBESSY");
+}
+document.getElementById("brodySpam").textContent=lines.join("\n");
+}
+
+/* ADMIN */
+
+function checkAdmin(name){
+if(name.toLowerCase()==="admin123"){
+adminPanel.style.display="block";
+system("Dev mode enabled");
+}else{
+adminPanel.style.display="none";
+}
+}
+
+function clearChat(){
+chat.innerHTML="";
+system("Chat cleared by admin");
+}
+
+function spamSystem(){
+for(let i=0;i<5;i++){
+system("ADMIN EVENT TRIGGERED");
+}
+}
+
+function toggleRainbow(){
+document.body.classList.toggle("rainbow-mode");
+}
+
+/* AVATAR */
+
+avatarUpload.addEventListener("change",()=>{
+const file=avatarUpload.files[0];
+if(!file) return;
+
+const reader=new FileReader();
+
+reader.onload=e=>{
+userAvatar=e.target.result;
+};
+
+reader.readAsDataURL(file);
+});
+
+/* ROOM SYSTEM */
 
 function closePeer(){
-if(peer) peer.destroy()
-connections=[]
+if(peer) peer.destroy();
+connections=[];
 }
 
 function createRoom(){
 
-closePeer()
+closePeer();
 
-let roomName=room.value || Math.random().toString(36).substring(2,8)
-room.value=roomName
+const roomName=room.value || Math.random().toString(36).substring(2,8);
+room.value=roomName;
 
-peer=new Peer(roomName)
+peer=new Peer(roomName);
 
 peer.on("open",()=>{
-system("Room created: "+roomName)
-})
+system("Room created: "+roomName);
+});
 
 peer.on("connection",conn=>{
+connections.push(conn);
 
-connections.push(conn)
+system("A user joined the room");
 
-system("A user joined the room")
-
-conn.on("data",handleData)
+conn.on("data",handleData);
 
 conn.on("close",()=>{
-system("A user left the room")
-})
+system("A user left the room");
+});
 
-})
+});
 
 }
 
 function joinRoom(){
 
-if(!room.value) return
+if(!room.value) return;
 
-closePeer()
+closePeer();
 
-peer=new Peer()
+peer=new Peer();
 
 peer.on("open",()=>{
 
-let conn=peer.connect(room.value)
+const conn=peer.connect(room.value);
 
-connections.push(conn)
+connections.push(conn);
 
-system("Joined room: "+room.value)
+system("Joined room: "+room.value);
 
-conn.on("data",handleData)
+conn.on("data",handleData);
 
 conn.on("close",()=>{
-system("Disconnected from room")
-})
+system("Disconnected from room");
+});
 
-})
-
-}
-
-/* GOOBER SYSTEM */
-
-let goobers=0
-let perClick=1
-let auto=0
-let rainbow=false
-let rebirths=0
-
-let priceClick=10
-let priceAuto=25
-let priceRainbow=50
-
-function updateGooberUI(){
-
-gooberCount.innerText=goobers+" goobers"
-
-priceClick.innerText=priceClick
-priceAuto.innerText=priceAuto
-priceRainbow.innerText=priceRainbow
-
-rebirthCount.innerText="Rebirths: "+rebirths
-
-rebirthBtn.disabled=goobers<100000
+});
 
 }
 
-goober.onclick=()=>{
+/* CHAT */
 
-goobers+=perClick
+function addMessage(d){
 
-goober.classList.add("pop")
+const div=document.createElement("div");
+div.className="msg";
 
-setTimeout(()=>goober.classList.remove("pop"),100)
+const time=new Date(d.time).toLocaleTimeString();
 
-updateGooberUI()
-saveGoober()
+const avatarHTML=d.avatar
+? `<img src="${d.avatar}" class="avatar">`
+: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`;
 
-}
+div.innerHTML=`
 
-function upgradeClick(){
+${avatarHTML}
 
-if(goobers<priceClick) return
+<div>
+<span class="name" style="color:${d.color}">${d.name}</span>
+${d.badge?`<span class="badge">${d.badge}</span>`:""}
+<span class="time">${time}</span>
 
-goobers-=priceClick
-perClick++
+<div>${d.msg||""}</div>
 
-priceClick=Math.floor(priceClick*1.5)
+${d.img?`<img src="${d.img}" style="max-width:200px;margin-top:4px;border-radius:6px;">`:""}
 
-updateGooberUI()
-saveGoober()
+</div>
+`;
 
-}
-
-function upgradeAuto(){
-
-if(goobers<priceAuto) return
-
-goobers-=priceAuto
-auto++
-
-priceAuto=Math.floor(priceAuto*1.6)
-
-updateGooberUI()
-saveGoober()
+chat.appendChild(div);
+chat.scrollTop=chat.scrollHeight;
 
 }
 
-function upgradeRainbow(){
+function send(){
 
-if(goobers<priceRainbow) return
+const msgText=message.value.trim();
 
-goobers-=priceRainbow
-rainbow=true
+if(!msgText && !image.files[0]) return;
 
-goober.classList.add("rainbowGoober")
+const name=username.value||"User";
 
-updateGooberUI()
-saveGoober()
+checkRainbow(name);
+checkMystic(name);
+checkBrody(name);
+checkAdmin(name);
 
-}
+const data={
+id:Date.now()+Math.random(),
+type:"msg",
+name:name,
+color:color.value,
+badge:badge.value,
+avatar:userAvatar,
+time:Date.now(),
+msg:msgText
+};
 
-function rebirth(){
+if(image.files[0]){
 
-if(goobers<100000) return
+const reader=new FileReader();
 
-rebirths++
+reader.onload=e=>{
+data.img=e.target.result;
+finish();
+};
 
-goobers=0
-perClick=1
-auto=0
-rainbow=false
+reader.readAsDataURL(image.files[0]);
 
-priceClick=10
-priceAuto=25
-priceRainbow=50
-
-goober.classList.remove("rainbowGoober")
-
-updateGooberUI()
-saveGoober()
-
-}
-
-setInterval(()=>{
-
-if(auto>0){
-
-goobers+=auto
-
-updateGooberUI()
-saveGoober()
-
-}
-
-},1000)
-
-/* SAVE */
-
-function saveGoober(){
-
-localStorage.setItem("gooberSave",JSON.stringify({
-goobers,perClick,auto,rainbow,rebirths,
-priceClick,priceAuto,priceRainbow
-}))
-
-}
-
-function loadGoober(){
-
-let save=JSON.parse(localStorage.getItem("gooberSave"))
-if(!save) return
-Object.assign(window,save)
-
-}
-
-loadGoober()
-updateGooberUI()
-
-/* GOOBER WINDOW DRAG */
-
-let widget=document.getElementById("gooberWindow")
-let header=document.getElementById("gooberHeader")
-
-let offsetX=0
-let offsetY=0
-let dragging=false
-
-header.onmousedown=e=>{
-
-dragging=true
-
-offsetX=e.clientX-widget.offsetLeft
-offsetY=e.clientY-widget.offsetTop
-
-}
-
-document.onmousemove=e=>{
-
-if(!dragging) return
-
-widget.style.left=e.clientX-offsetX+"px"
-widget.style.top=e.clientY-offsetY+"px"
-
-}
-
-document.onmouseup=()=>{
-
-dragging=false
-
-localStorage.setItem("gooberPos",JSON.stringify({
-x:widget.style.left,
-y:widget.style.top
-}))
-
-}
-
-let pos=JSON.parse(localStorage.getItem("gooberPos"))
-
-if(pos){
-
-widget.style.left=pos.x
-widget.style.top=pos.y
-
-}
-
-/* COLLAPSE */
-
-function toggleGoober(){
-
-if(gooberBody.style.display==="none"){
-gooberBody.style.display="block"
 }else{
-gooberBody.style.display="none"
+finish();
 }
 
+function finish(){
+addMessage(data);
+broadcast(data);
+seenMessages.add(data.id);
+}
+
+message.value="";
+image.value="";
+
+}
+
+function handleData(data){
+
+if(data.type!=="msg") return;
+if(seenMessages.has(data.id)) return;
+
+seenMessages.add(data.id);
+addMessage(data);
+
+}
+
+function broadcast(data){
+connections.forEach(c=>c.send(data));
 }
 
 </script>
+
+</body>
 </html>
-```
