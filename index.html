@@ -63,8 +63,6 @@ overflow:auto;
 padding:15px;
 }
 
-/* MESSAGE */
-
 .msg{
 display:flex;
 gap:10px;
@@ -127,21 +125,24 @@ margin-top:10px;
 border-radius:8px;
 }
 
-/* GOOBER CLICKER */
+/* GOOBER WINDOW */
 
-#gooberGame{
+#gooberWindow{
 
-position:fixed;
-bottom:20px;
-right:20px;
+position:absolute;
+top:120px;
+left:300px;
 
-width:120px;
+width:180px;
+height:auto;
 
 background:#111827;
 border:1px solid #1f2937;
 border-radius:8px;
 
-font-size:11px;
+resize:both;
+overflow:auto;
+
 z-index:1000;
 
 }
@@ -149,61 +150,49 @@ z-index:1000;
 #gooberHeader{
 
 background:#1f2937;
+padding:5px;
+cursor:move;
+
 display:flex;
 justify-content:space-between;
 align-items:center;
 
-padding:4px;
-cursor:move;
-
-}
-
-#gooberHeader button{
-
-background:none;
-border:none;
-color:white;
-cursor:pointer;
-
 }
 
 #gooberBody{
-
 padding:6px;
 text-align:center;
-
+font-size:12px;
 }
 
 #goober{
 
-width:40px;
-height:40px;
-
+width:50px;
+height:50px;
 background:#374151;
-
 border-radius:6px;
 
 display:flex;
 align-items:center;
 justify-content:center;
 
-font-size:18px;
-
 margin:auto;
-cursor:pointer;
 
+font-size:20px;
+
+cursor:pointer;
 transition:transform .1s;
 
 }
 
 #goober.pop{
-transform:scale(1.2)
+transform:scale(1.25)
 }
 
-#gooberGame button{
+#gooberWindow button{
 width:100%;
-font-size:10px;
-margin-top:3px;
+margin-top:4px;
+font-size:11px;
 }
 
 .rainbowGoober{
@@ -215,7 +204,7 @@ animation:hue 3s linear infinite
 100%{filter:hue-rotate(360deg)}
 }
 
-/* BRODY ERROR */
+/* BRODY SCREEN */
 
 #brodyScreen{
 position:fixed;
@@ -284,13 +273,13 @@ overflow:hidden;
 
 </div>
 
-<!-- GOOBER GAME -->
+<!-- GOOBER WINDOW -->
 
-<div id="gooberGame">
+<div id="gooberWindow">
 
 <div id="gooberHeader">
-<span>Goober</span>
-<button id="collapseBtn">−</button>
+Goober Clicker
+<button onclick="toggleGoober()">–</button>
 </div>
 
 <div id="gooberBody">
@@ -323,12 +312,30 @@ Rebirth (100000)
 
 <script>
 
-/* ================= CHAT ================= */
+/* ENTER KEY LOGIC */
+
+document.addEventListener("keydown",e=>{
+
+if(e.key==="Enter"){
+
+if(document.activeElement!==message){
+message.focus()
+return
+}
+
+if(message.value.trim()!==""){
+send()
+}
+
+}
+
+})
+
+/* CHAT */
 
 let peer
 let connections=[]
 let seenMessages=new Set()
-let userAvatar=null
 
 function system(text){
 
@@ -341,105 +348,69 @@ chat.scrollTop=chat.scrollHeight
 
 }
 
-function addMessage(d){
+/* ROOMS */
 
-let div=document.createElement("div")
-div.className="msg"
+function closePeer(){
+if(peer) peer.destroy()
+connections=[]
+}
 
-let avatarHTML=d.avatar
-? `<img src="${d.avatar}" class="avatar">`
-: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`
+function createRoom(){
 
-div.innerHTML=`
+closePeer()
 
-${avatarHTML}
+let roomName=room.value || Math.random().toString(36).substring(2,8)
+room.value=roomName
 
-<div>
+peer=new Peer(roomName)
 
-<span class="name" style="color:${d.color}">
-${d.name}
-</span>
+peer.on("open",()=>{
+system("Room created: "+roomName)
+})
 
-${d.badge?`<span class="badge">${d.badge}</span>`:""}
+peer.on("connection",conn=>{
 
-<div>${d.msg||""}</div>
+connections.push(conn)
 
-${d.img?`<img src="${d.img}" style="max-width:200px;margin-top:4px;border-radius:6px;">`:""}
+system("A user joined the room")
 
-</div>
-`
+conn.on("data",handleData)
 
-chat.appendChild(div)
-chat.scrollTop=chat.scrollHeight
+conn.on("close",()=>{
+system("A user left the room")
+})
+
+})
 
 }
 
-function send(){
+function joinRoom(){
 
-let msgText=message.value.trim()
+if(!room.value) return
 
-if(!msgText && !image.files[0]) return
+closePeer()
 
-let name=username.value||"User"
+peer=new Peer()
 
-if(name.toLowerCase()==="admin123"){
-adminPanel.style.display="block"
-system("Dev mode enabled")
-}
+peer.on("open",()=>{
 
-if(name.toLowerCase()==="brody"){
+let conn=peer.connect(room.value)
 
-brodyScreen.style.display="block"
+connections.push(conn)
 
-let spam=""
+system("Joined room: "+room.value)
 
-for(let i=0;i<200;i++){
-spam+="BRODYBESSY\n"
-}
+conn.on("data",handleData)
 
-brodyScreen.innerText=spam
+conn.on("close",()=>{
+system("Disconnected from room")
+})
 
-return
+})
 
 }
 
-let data={
-id:Date.now()+Math.random(),
-type:"msg",
-name:name,
-color:color.value,
-badge:badge.value,
-avatar:userAvatar,
-msg:msgText
-}
-
-if(image.files[0]){
-
-let reader=new FileReader()
-
-reader.onload=e=>{
-data.img=e.target.result
-finish()
-}
-
-reader.readAsDataURL(image.files[0])
-
-}else finish()
-
-function finish(){
-
-addMessage(data)
-connections.forEach(c=>c.send(data))
-seenMessages.add(data.id)
-
-}
-
-message.value=""
-image.value=""
-
-}
-
-/* ================= GOOBER ================= */
+/* GOOBER SYSTEM */
 
 let goobers=0
 let perClick=1
@@ -470,6 +441,7 @@ goober.onclick=()=>{
 goobers+=perClick
 
 goober.classList.add("pop")
+
 setTimeout(()=>goober.classList.remove("pop"),100)
 
 updateGooberUI()
@@ -554,54 +526,6 @@ saveGoober()
 
 },1000)
 
-/* ADMIN GOOBER HACKS */
-
-function hackGoobers(amount){
-
-goobers+=amount
-
-updateGooberUI()
-saveGoober()
-
-}
-
-function maxGoober(){
-
-perClick=100
-auto=100
-rainbow=true
-
-goober.classList.add("rainbowGoober")
-
-updateGooberUI()
-saveGoober()
-
-}
-
-function forceRebirth(){
-
-rebirths++
-
-goobers=0
-
-updateGooberUI()
-saveGoober()
-
-}
-
-function resetGoober(){
-
-goobers=0
-perClick=1
-auto=0
-rainbow=false
-rebirths=0
-
-updateGooberUI()
-saveGoober()
-
-}
-
 /* SAVE */
 
 function saveGoober(){
@@ -616,9 +540,7 @@ priceClick,priceAuto,priceRainbow
 function loadGoober(){
 
 let save=JSON.parse(localStorage.getItem("gooberSave"))
-
 if(!save) return
-
 Object.assign(window,save)
 
 }
@@ -626,17 +548,9 @@ Object.assign(window,save)
 loadGoober()
 updateGooberUI()
 
-/* GOOBER BADGE */
+/* GOOBER WINDOW DRAG */
 
-function applyGooberBadge(){
-
-badge.value="Goobers:"+goobers
-
-}
-
-/* DRAGGABLE */
-
-let widget=document.getElementById("gooberGame")
+let widget=document.getElementById("gooberWindow")
 let header=document.getElementById("gooberHeader")
 
 let offsetX=0
@@ -683,23 +597,16 @@ widget.style.top=pos.y
 
 /* COLLAPSE */
 
-collapseBtn.onclick=()=>{
+function toggleGoober(){
 
 if(gooberBody.style.display==="none"){
-
 gooberBody.style.display="block"
-collapseBtn.innerText="−"
-
 }else{
-
 gooberBody.style.display="none"
-collapseBtn.innerText="+"
-
 }
 
 }
 
 </script>
-</body>
 </html>
 ```
