@@ -8,7 +8,6 @@
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <style>
-
 *{box-sizing:border-box;}
 
 body{
@@ -20,8 +19,6 @@ display:flex;
 height:100vh;
 overflow:hidden;
 }
-
-/* Sidebar */
 
 #sidebar{
 width:260px;
@@ -61,8 +58,6 @@ overflow:auto;
 padding:15px;
 }
 
-/* Messages */
-
 .msg{
 display:flex;
 gap:10px;
@@ -79,7 +74,10 @@ align-items:center;
 justify-content:center;
 font-weight:bold;
 color:white;
+overflow:hidden;
 }
+
+.avatar img{width:100%;height:100%;object-fit:cover;}
 
 .name{font-weight:bold;}
 .time{font-size:11px;opacity:.6;margin-left:6px;}
@@ -98,8 +96,6 @@ font-style:italic;
 margin:6px 0;
 }
 
-/* Input */
-
 #inputbar{
 display:flex;
 gap:6px;
@@ -108,34 +104,31 @@ border-top:1px solid #1f2937;
 background:#111827;
 }
 
-#inputbar input[type="text"]{
+#inputbar textarea{
 flex:1;
 padding:8px;
 border-radius:6px;
 border:none;
 color:white;
 background:#1f2937;
+resize:none;
+height:40px;
 }
-
-/* room info */
 
 #roomInfo{
 padding:6px;
 background:#1f2937;
 font-size:14px;
+margin-bottom:8px;
 }
 
-/* user list */
-
 #users{
-margin-top:10px;
 background:#1f2937;
 padding:8px;
 border-radius:6px;
 font-size:13px;
+margin-bottom:10px;
 }
-
-/* image zoom */
 
 #imageZoom{
 position:fixed;
@@ -165,8 +158,6 @@ max-height:90%;
 
 <h2>Bhys Chat</h2>
 
-<h3>Room</h3>
-
 <div id="roomInfo">Not in a room</div>
 
 <input id="room" placeholder="Room name">
@@ -190,7 +181,7 @@ max-height:90%;
 <div id="chat"></div>
 
 <div id="inputbar">
-<input id="message" type="text" placeholder="Message...">
+<textarea id="message" placeholder="Message..."></textarea>
 <input type="file" id="file">
 <button onclick="send()">Send</button>
 </div>
@@ -199,8 +190,6 @@ max-height:90%;
 
 <script>
 
-/* STATE */
-
 let peer;
 let connections=[];
 let users={};
@@ -208,88 +197,100 @@ let seenMessages=new Set();
 let userAvatar=null;
 let currentRoom=null;
 
-/* SAVE PROFILE */
+/* PROFILE */
 
 function saveProfile(){
-
 localStorage.setItem("name",username.value);
 localStorage.setItem("badge",badge.value);
 localStorage.setItem("color",color.value);
-localStorage.setItem("avatar",userAvatar);
-
+localStorage.setItem("avatar",userAvatar||"");
 }
 
 function loadProfile(){
-
 username.value=localStorage.getItem("name")||"";
 badge.value=localStorage.getItem("badge")||"";
 color.value=localStorage.getItem("color")||"#60a5fa";
-userAvatar=localStorage.getItem("avatar");
-
+userAvatar=localStorage.getItem("avatar")||null;
 }
 
 /* ROOM DISPLAY */
 
 function updateRoomInfo(){
-
 roomInfo.innerText=currentRoom
 ? "Room: "+currentRoom
 : "Not in a room";
-
 }
 
 /* USER LIST */
 
 function updateUserList(){
-
-users[peer.id]=username.value||"User";
-
-usersDiv="";
-
+let html="";
 for(let id in users){
-
-usersDiv+=users[id]+"<br>";
-
+html+=users[id]+"<br>";
+}
+usersDiv.innerHTML=html;
 }
 
-users.innerHTML=usersDiv;
-
-}
-
-/* SYSTEM MESSAGE */
+/* SYSTEM */
 
 function system(text){
-
 const div=document.createElement("div");
 div.className="system";
 div.innerText=text;
-
 chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
-
 }
 
 /* AVATAR */
 
 avatarUpload.addEventListener("change",()=>{
-
 const file=avatarUpload.files[0];
 if(!file)return;
-
 const reader=new FileReader();
-
 reader.onload=e=>{
 userAvatar=e.target.result;
 saveProfile();
 };
-
 reader.readAsDataURL(file);
+});
+
+/* IMAGE ZOOM */
+
+function zoomImage(src){
+zoomImg.src=src;
+imageZoom.style.display="flex";
+}
+
+function closeZoom(){
+imageZoom.style.display="none";
+}
+
+/* ENTER KEY */
+
+document.addEventListener("keydown",function(e){
+
+if(e.key==="Enter"){
+
+if(e.shiftKey) return;
+
+if(document.activeElement!==message){
+e.preventDefault();
+message.focus();
+return;
+}
+
+e.preventDefault();
+if(message.value.trim()!=="" || file.files.length>0){
+send();
+}
+
+}
 
 });
 
-/* FILE PASTE */
+/* PASTE IMAGES */
 
-document.addEventListener("paste",e=>{
+document.addEventListener("paste",function(e){
 
 const items=e.clipboardData.items;
 
@@ -297,163 +298,66 @@ for(let item of items){
 
 if(item.type.startsWith("image")){
 
-const file=item.getAsFile();
+const blob=item.getAsFile();
+const reader=new FileReader();
 
-fileInput=file;
+reader.onload=ev=>{
+const data={
+id:Date.now()+Math.random(),
+type:"msg",
+name:username.value||"User",
+color:color.value,
+badge:badge.value,
+avatar:userAvatar,
+file:{
+name:"pasted.png",
+type:"image/png",
+data:ev.target.result
+},
+time:Date.now()
+};
 
-sendFile(file);
+addMessage(data);
+broadcast(data);
+};
 
+reader.readAsDataURL(blob);
 }
 
 }
 
 });
 
-/* IMAGE ZOOM */
-
-function zoomImage(src){
-
-zoomImg.src=src;
-imageZoom.style.display="flex";
-
-}
-
-function closeZoom(){
-
-imageZoom.style.display="none";
-
-}
-
-/* ROOM SYSTEM */
+/* ROOM */
 
 function closePeer(){
-
 if(peer)peer.destroy();
 connections=[];
-
 }
 
 function createRoom(){
-
 closePeer();
-
 currentRoom=room.value||Math.random().toString(36).slice(2,7);
-
-peer=new Peer(currentRoom);
-
 localStorage.setItem("room",currentRoom);
-
+peer=new Peer(currentRoom);
 updateRoomInfo();
-
-peer.on("open",()=>{
-
-system("Room created");
-
-updateUserList();
-
-});
-
 peer.on("connection",conn=>{
-
 connections.push(conn);
-
 conn.on("data",handleData);
-
-conn.on("open",()=>{
-
-conn.send({
-type:"user",
-name:username.value
 });
-
-});
-
-});
-
 }
 
 function joinRoom(){
-
 closePeer();
-
 currentRoom=room.value;
-
 localStorage.setItem("room",currentRoom);
-
 peer=new Peer();
-
 updateRoomInfo();
-
 peer.on("open",()=>{
-
 const conn=peer.connect(currentRoom);
-
 connections.push(conn);
-
 conn.on("data",handleData);
-
-conn.on("open",()=>{
-
-conn.send({
-type:"user",
-name:username.value
 });
-
-});
-
-});
-
-}
-
-/* MESSAGE DISPLAY */
-
-function addMessage(d){
-
-const div=document.createElement("div");
-div.className="msg";
-
-const time=new Date(d.time).toLocaleTimeString();
-
-let fileHTML="";
-
-if(d.file){
-
-if(d.file.type.startsWith("image")){
-
-fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;cursor:pointer" onclick="zoomImage('${d.file.data}')">`;
-
-}else{
-
-fileHTML=`<a href="${d.file.data}" download="${d.file.name}">Download ${d.file.name}</a>`;
-
-}
-
-}
-
-const avatarHTML=d.avatar
-? `<img src="${d.avatar}" class="avatar">`
-: `<div class="avatar">${d.name.charAt(0)}</div>`;
-
-div.innerHTML=`
-
-${avatarHTML}
-
-<div>
-<span class="name" style="color:${d.color}">${d.name}</span>
-${d.badge?`<span class="badge">${d.badge}</span>`:""}
-<span class="time">${time}</span>
-
-<div>${d.msg||""}</div>
-
-${fileHTML}
-
-</div>
-
-`;
-
-chat.appendChild(div);
-chat.scrollTop=chat.scrollHeight;
-
 }
 
 /* SEND */
@@ -463,11 +367,11 @@ function send(){
 saveProfile();
 
 const text=message.value.trim();
+const selectedFile=file.files[0];
 
-if(!text && !file.files[0])return;
+if(!text && !selectedFile) return;
 
 const data={
-
 id:Date.now()+Math.random(),
 type:"msg",
 name:username.value||"User",
@@ -476,18 +380,17 @@ badge:badge.value,
 avatar:userAvatar,
 msg:text,
 time:Date.now()
-
 };
 
-if(file.files[0]){
+if(selectedFile){
 
 const reader=new FileReader();
 
 reader.onload=e=>{
 
 data.file={
-name:file.files[0].name,
-type:file.files[0].type,
+name:selectedFile.name,
+type:selectedFile.type,
 data:e.target.result
 };
 
@@ -495,28 +398,61 @@ finish();
 
 };
 
-reader.readAsDataURL(file.files[0]);
+reader.readAsDataURL(selectedFile);
 
 }else{
-
 finish();
-
 }
 
 function finish(){
-
 addMessage(data);
 broadcast(data);
 seenMessages.add(data.id);
-
 }
 
 message.value="";
 file.value="";
+}
+
+/* MESSAGE */
+
+function addMessage(d){
+
+const div=document.createElement("div");
+div.className="msg";
+
+let fileHTML="";
+
+if(d.file){
+
+if(d.file.type.startsWith("image")){
+fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;cursor:pointer" onclick="zoomImage('${d.file.data}')">`;
+}else{
+fileHTML=`<a href="${d.file.data}" download="${d.file.name}">Download ${d.file.name}</a>`;
+}
 
 }
 
-/* HANDLE DATA */
+const avatarHTML=d.avatar
+? `<div class="avatar"><img src="${d.avatar}"></div>`
+: `<div class="avatar">${d.name.charAt(0)}</div>`;
+
+div.innerHTML=`
+${avatarHTML}
+<div>
+<span class="name" style="color:${d.color}">${d.name}</span>
+${d.badge?`<span class="badge">${d.badge}</span>`:""}
+<span class="time">${new Date(d.time).toLocaleTimeString()}</span>
+<div>${d.msg||""}</div>
+${fileHTML}
+</div>
+`;
+
+chat.appendChild(div);
+chat.scrollTop=chat.scrollHeight;
+}
+
+/* HANDLE */
 
 function handleData(data){
 
@@ -525,16 +461,7 @@ if(data.type==="msg"){
 if(seenMessages.has(data.id))return;
 
 seenMessages.add(data.id);
-
 addMessage(data);
-
-}
-
-if(data.type==="user"){
-
-users[data.id]=data.name;
-
-updateUserList();
 
 }
 
@@ -543,26 +470,18 @@ updateUserList();
 /* BROADCAST */
 
 function broadcast(data){
-
 connections.forEach(c=>c.send(data));
-
 }
 
 /* AUTO RECONNECT */
 
 function autoReconnect(){
-
 loadProfile();
-
-const savedRoom=localStorage.getItem("room");
-
-if(savedRoom){
-
-room.value=savedRoom;
+const saved=localStorage.getItem("room");
+if(saved){
+room.value=saved;
 joinRoom();
-
 }
-
 }
 
 autoReconnect();
