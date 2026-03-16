@@ -1,5 +1,6 @@
+```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 
 <meta charset="UTF-8">
@@ -15,7 +16,7 @@
 
 body{
 margin:0;
-font-family:Segoe UI;
+font-family:Segoe UI, sans-serif;
 background:#0f172a;
 color:white;
 display:flex;
@@ -31,6 +32,7 @@ background:#111827;
 padding:15px;
 border-right:1px solid #1f2937;
 overflow:auto;
+transition:left .3s;
 }
 
 #sidebar input,#sidebar button{
@@ -44,10 +46,11 @@ border:none;
 button{
 background:#2563eb;
 color:white;
+font-weight:bold;
 cursor:pointer;
 }
 
-/* MAIN */
+button:hover{background:#1d4ed8;}
 
 #main{
 flex:1;
@@ -60,14 +63,6 @@ flex:1;
 overflow:auto;
 padding:15px;
 }
-
-#typingIndicator{
-font-size:12px;
-opacity:.6;
-padding:4px 10px;
-}
-
-/* MESSAGE */
 
 .msg{
 display:flex;
@@ -92,12 +87,33 @@ height:100%;
 object-fit:cover;
 }
 
+.name{font-weight:bold;}
+.time{font-size:11px;opacity:.6;margin-left:6px;}
+
 .badge{
 background:#374151;
 padding:2px 6px;
 border-radius:4px;
 font-size:11px;
 margin-left:6px;
+}
+
+.system{
+opacity:.7;
+font-style:italic;
+margin:6px 0;
+}
+
+.reactions{
+font-size:14px;
+margin-top:3px;
+cursor:pointer;
+}
+
+.typing{
+font-size:12px;
+opacity:.6;
+padding-left:15px;
 }
 
 /* INPUT BAR */
@@ -110,7 +126,7 @@ border-top:1px solid #1f2937;
 background:#111827;
 }
 
-#inputbar input{
+#inputbar input[type="text"]{
 flex:1;
 padding:8px;
 border-radius:6px;
@@ -119,130 +135,34 @@ background:#1f2937;
 color:white;
 }
 
-/* SETTINGS */
+/* MOBILE */
 
-#settingsBtn{
+#menuBtn{
+display:none;
 position:absolute;
 top:10px;
-right:10px;
-z-index:1000;
+left:10px;
+z-index:10;
+padding:6px 10px;
+border-radius:6px;
+background:#2563eb;
 }
 
-#settingsPanel{
-position:fixed;
-top:60px;
-right:20px;
-background:#111827;
-padding:15px;
-border-radius:8px;
-display:none;
-z-index:1000;
-}
+@media (max-width:700px){
 
-/* THEMES */
+#menuBtn{display:block;}
 
-.theme-light{background:#f4f4f4;color:black;}
-.theme-green{background:#022c22;}
-.theme-purple{background:#1e1b4b;}
-
-/* FRUTIGER AERO */
-
-.theme-aero{
-background:
-radial-gradient(circle at 20% 20%, #a7f3d0, transparent 40%),
-radial-gradient(circle at 80% 30%, #7dd3fc, transparent 40%),
-linear-gradient(#b3e5fc,#38bdf8);
-color:#003344;
-font-family:Verdana;
-}
-
-/* glass panels */
-
-.theme-aero #sidebar{
-background:rgba(255,255,255,0.35);
-backdrop-filter:blur(12px);
-}
-
-.theme-aero #chat{
-background:rgba(255,255,255,0.25);
-backdrop-filter:blur(10px);
-}
-
-/* bubbles */
-
-.bubble{
-position:fixed;
-bottom:-100px;
-width:30px;
-height:30px;
-background:rgba(255,255,255,.4);
-border-radius:50%;
-animation:bubbleFloat 15s linear infinite;
-pointer-events:none;
-}
-
-@keyframes bubbleFloat{
-0%{transform:translateY(0)}
-100%{transform:translateY(-120vh)}
-}
-
-/* globe */
-
-.globe{
-position:fixed;
-bottom:20px;
-right:20px;
-width:120px;
-height:120px;
-border-radius:50%;
-background:
-radial-gradient(circle at 30% 30%, #a7f3d0, #38bdf8);
-opacity:.4;
-animation:spin 30s linear infinite;
-pointer-events:none;
-}
-
-@keyframes spin{
-0%{transform:rotate(0deg)}
-100%{transform:rotate(360deg)}
-}
-
-/* SIN */
-
-#sinOverlay{
-position:fixed;
-inset:0;
-pointer-events:none;
-display:none;
-z-index:9000;
-}
-
-.crack{
+#sidebar{
 position:absolute;
-height:4px;
-background:#ff00aa;
-box-shadow:0 0 15px #ff00aa;
-animation:crackSpread 1.2s forwards;
+height:100%;
+left:-260px;
+z-index:5;
 }
 
-@keyframes crackSpread{
-0%{width:0}
-100%{width:100vw}
+#sidebar.open{
+left:0;
 }
 
-.sinPopup{
-position:fixed;
-background:black;
-color:#ff00aa;
-border:2px solid #ff00aa;
-padding:10px;
-font-family:Courier New;
-animation:fallError 2s linear forwards;
-}
-
-@keyframes fallError{
-0%{transform:translateY(-200px)}
-100%{transform:translateY(110vh)}
 }
 
 </style>
@@ -250,51 +170,33 @@ animation:fallError 2s linear forwards;
 
 <body>
 
-<button id="settingsBtn" onclick="toggleSettings()">⚙</button>
-
-<div id="settingsPanel">
-
-<h3>Theme</h3>
-
-<select onchange="setTheme(this.value)">
-<option value="">Default</option>
-<option value="theme-light">Light</option>
-<option value="theme-green">Green</option>
-<option value="theme-purple">Purple</option>
-<option value="theme-aero">Frutiger Aero</option>
-</select>
-
-</div>
-
-<div id="sinOverlay"></div>
+<button id="menuBtn" onclick="toggleMenu()">☰</button>
 
 <div id="sidebar">
 
 <h2>Bhys Chat</h2>
 
+<h3>Room</h3>
 <input id="room" placeholder="Room name">
 <button onclick="createRoom()">Create Room</button>
 <button onclick="joinRoom()">Join Room</button>
 
-<div id="roomInfo">Not connected</div>
-
 <h3>Profile</h3>
-
 <input id="username" placeholder="Name">
 <input type="color" id="color" value="#60a5fa">
-<input type="file" id="avatarUpload">
+<input id="badge" placeholder="Badge">
+<input type="file" id="avatarUpload" accept="image/*">
 
 </div>
 
 <div id="main">
 
 <div id="chat"></div>
-
-<div id="typingIndicator"></div>
+<div id="typing" class="typing"></div>
 
 <div id="inputbar">
-<input id="message" placeholder="Message">
-<input type="file" id="file">
+<input id="message" type="text" placeholder="Message...">
+<input type="file" id="fileUpload">
 <button onclick="send()">Send</button>
 </div>
 
@@ -302,192 +204,188 @@ animation:fallError 2s linear forwards;
 
 <script>
 
-/* GLOBAL */
+/* GLOBALS */
 
-let peer
+let peer=null
 let connections=[]
-let isHost=false
+let seenMessages=new Set()
+let messageHistory=[]
 let userAvatar=null
-let seen=new Set()
+let typingTimer=null
 
-/* SETTINGS */
+const chat=document.getElementById("chat")
+const typingDiv=document.getElementById("typing")
 
-function toggleSettings(){
-settingsPanel.style.display=
-settingsPanel.style.display==="block"?"none":"block"
+/* MOBILE MENU */
+
+function toggleMenu(){
+sidebar.classList.toggle("open")
 }
 
-function setTheme(t){
+/* ENTER KEY */
 
-document.body.classList.remove(
-"theme-light","theme-green","theme-purple","theme-aero"
-)
+message.addEventListener("keydown",e=>{
+if(e.key==="Enter") send()
+})
 
-removeAeroEffects()
+/* TYPING INDICATOR */
 
-if(t){
+message.addEventListener("input",()=>{
 
-document.body.classList.add(t)
+broadcast({type:"typing",name:username.value||"User"})
 
-if(t==="theme-aero") enableAero()
+clearTimeout(typingTimer)
 
+typingTimer=setTimeout(()=>{
+broadcast({type:"stopTyping"})
+},1500)
+
+})
+
+/* SYSTEM */
+
+function system(text){
+const div=document.createElement("div")
+div.className="system"
+div.innerText=text
+chat.appendChild(div)
+chat.scrollTop=chat.scrollHeight
 }
 
+/* AVATAR */
+
+avatarUpload.addEventListener("change",()=>{
+
+const file=avatarUpload.files[0]
+if(!file) return
+
+const reader=new FileReader()
+
+reader.onload=e=>{
+userAvatar=e.target.result
 }
 
-/* AERO EFFECTS */
+reader.readAsDataURL(file)
 
-function enableAero(){
+})
 
-spawnBubbles()
-
-let globe=document.createElement("div")
-globe.className="globe"
-globe.id="aeroGlobe"
-
-document.body.appendChild(globe)
-
-}
-
-function removeAeroEffects(){
-
-document.querySelectorAll(".bubble").forEach(b=>b.remove())
-
-let g=document.getElementById("aeroGlobe")
-if(g) g.remove()
-
-}
-
-function spawnBubbles(){
-
-for(let i=0;i<12;i++){
-
-let b=document.createElement("div")
-b.className="bubble"
-
-b.style.left=Math.random()*100+"vw"
-b.style.animationDuration=10+Math.random()*10+"s"
-
-document.body.appendChild(b)
-
-}
-
-}
-
-/* NETWORK */
+/* CONNECTION */
 
 function closePeer(){
 
-if(peer)peer.destroy()
+if(peer){
+peer.destroy()
+peer=null
+}
 
 connections=[]
 
 }
 
-function createRoom(){
-
-closePeer()
-
-isHost=true
-
-peer=new Peer(room.value)
-
-peer.on("open",id=>{
-
-roomInfo.innerText="Room: "+id+" (Host)"
-
-})
-
-peer.on("connection",conn=>{
+function setupConnection(conn){
 
 connections.push(conn)
 
-system("User joined")
+conn.on("open",()=>{
 
-conn.on("data",data=>{
-
-handleData(data)
-
-connections.forEach(c=>{
-if(c!==conn)c.send(data)
+conn.send({
+type:"history",
+messages:messageHistory
 })
 
 })
+
+conn.on("data",handleData)
 
 conn.on("close",()=>{
-
-system("User left")
-
-connections=connections.filter(c=>c!==conn)
-
-})
-
+system("User disconnected")
 })
 
 }
 
-function joinRoom(){
+/* CREATE ROOM */
+
+function createRoom(){
 
 closePeer()
 
-isHost=false
+let roomName=room.value.trim()
+
+if(!roomName){
+roomName=Math.random().toString(36).substring(2,8)
+room.value=roomName
+}
+
+peer=new Peer(roomName)
+
+peer.on("open",()=>{
+system("Room created: "+roomName)
+system("You are the host")
+})
+
+peer.on("connection",conn=>{
+system("User joined room")
+setupConnection(conn)
+})
+
+}
+
+/* JOIN ROOM */
+
+function joinRoom(){
+
+const roomName=room.value.trim()
+if(!roomName) return
+
+closePeer()
 
 peer=new Peer()
 
 peer.on("open",()=>{
 
-let conn=peer.connect(room.value)
+const conn=peer.connect(roomName)
 
-connections=[conn]
+conn.on("open",()=>{
 
-roomInfo.innerText="Room: "+room.value
+system("You joined room: "+roomName)
 
-conn.on("data",handleData)
+broadcast({
+type:"system",
+msg:(username.value||"User")+" joined the room"
+})
+
+})
+
+setupConnection(conn)
 
 })
 
 }
 
-/* AVATAR UPLOAD */
-
-avatarUpload.onchange=()=>{
-
-let f=avatarUpload.files[0]
-
-if(!f) return
-
-let r=new FileReader()
-
-r.onload=e=>{
-userAvatar=e.target.result
-}
-
-r.readAsDataURL(f)
-
-}
-
-/* MESSAGE */
+/* MESSAGE UI */
 
 function addMessage(d){
 
-let div=document.createElement("div")
+const div=document.createElement("div")
 div.className="msg"
 
-let avatar=d.avatar
+const time=new Date(d.time).toLocaleTimeString()
+
+let avatarHTML=d.avatar
 ? `<div class="avatar"><img src="${d.avatar}"></div>`
-: `<div class="avatar">${d.name[0]}</div>`
+: `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`
 
 let fileHTML=""
 
 if(d.file){
 
-if(d.fileType.startsWith("image/")){
+if(d.file.name.match(/\.(png|jpg|jpeg|gif|webp)$/i)){
 
-fileHTML=`<img src="${d.file}" style="max-width:200px;border-radius:6px;">`
+fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;margin-top:5px;">`
 
 }else{
 
-fileHTML=`<a href="${d.file}" download="${d.fileName}">Download ${d.fileName}</a>`
+fileHTML=`<a href="${d.file.data}" download="${d.file.name}">📎 ${d.file.name}</a>`
 
 }
 
@@ -495,12 +393,22 @@ fileHTML=`<a href="${d.file}" download="${d.fileName}">Download ${d.fileName}</a
 
 div.innerHTML=`
 
-${avatar}
+${avatarHTML}
 
 <div>
-<span style="color:${d.color}">${d.name}</span>
+
+<span class="name" style="color:${d.color}">${d.name}</span>
+${d.badge?`<span class="badge">${d.badge}</span>`:""}
+<span class="time">${time}</span>
+
 <div>${d.msg||""}</div>
+
 ${fileHTML}
+
+<div class="reactions" id="react-${d.id}">
+👍 ❤️ 😂 😮 😢
+</div>
+
 </div>
 
 `
@@ -510,159 +418,152 @@ chat.scrollTop=chat.scrollHeight
 
 }
 
-function broadcast(data){
-
-connections.forEach(c=>c.send(data))
-
-}
+/* SEND MESSAGE */
 
 function send(){
 
-let msg=message.value.trim()
-let f=file.files[0]
+const text=message.value.trim()
+const file=fileUpload.files[0]
 
-if(!msg && !f) return
+if(!text && !file) return
 
-if(msg.toLowerCase()==="/summon sin"){
-
-triggerSin()
-broadcast({type:"sin"})
-return
-
-}
-
-let data={
+const data={
 id:Date.now()+Math.random(),
 type:"msg",
 name:username.value||"User",
 color:color.value,
+badge:badge.value,
 avatar:userAvatar,
-msg:msg
+time:Date.now(),
+msg:text
 }
 
-if(f){
+if(file){
 
-let r=new FileReader()
+const reader=new FileReader()
 
-r.onload=e=>{
-
-data.file=e.target.result
-data.fileType=f.type
-data.fileName=f.name
-
+reader.onload=e=>{
+data.file={
+name:file.name,
+data:e.target.result
+}
 finish()
-
 }
 
-r.readAsDataURL(f)
+reader.readAsDataURL(file)
 
 }else{
-
 finish()
-
 }
 
 function finish(){
 
 addMessage(data)
+messageHistory.push(data)
+
 broadcast(data)
+
+seenMessages.add(data.id)
 
 }
 
 message.value=""
-file.value=""
+fileUpload.value=""
 
 }
 
-/* RECEIVE */
+/* HANDLE DATA */
 
-function handleData(d){
+function handleData(data){
 
-if(d.type==="sin"){triggerSin();return}
+if(data.type==="history"){
 
-if(seen.has(d.id))return
-seen.add(d.id)
-
-addMessage(d)
-
+data.messages.forEach(m=>{
+if(!seenMessages.has(m.id)){
+seenMessages.add(m.id)
+addMessage(m)
 }
+})
 
-/* SYSTEM */
-
-function system(t){
-
-let d=document.createElement("div")
-d.style.opacity=.6
-d.innerText=t
-
-chat.appendChild(d)
-
-}
-
-/* SIN EVENT */
-
-function triggerSin(){
-
-sinOverlay.style.display="block"
-sinOverlay.innerHTML=""
-
-for(let i=0;i<20;i++){
-
-let c=document.createElement("div")
-c.className="crack"
-c.style.top=Math.random()*window.innerHeight+"px"
-
-sinOverlay.appendChild(c)
-
-}
-
-setTimeout(()=>{
-
-for(let i=0;i<25;i++){
-
-let p=document.createElement("div")
-p.className="sinPopup"
-
-p.innerText="STRAYAWAYFROMWHATSRIGHT"
-
-p.style.left=Math.random()*window.innerWidth+"px"
-
-document.body.appendChild(p)
-
-setTimeout(()=>p.remove(),2000)
-
-}
-
-},1200)
-
-setTimeout(()=>{
-
-sinOverlay.style.display="none"
-closePeer()
-system("Sin shattered the room.")
-
-},4500)
-
-}
-
-/* ENTER SEND */
-
-document.addEventListener("keydown",e=>{
-
-if(e.key==="Enter"){
-
-if(document.activeElement!==message){
-message.focus()
 return
 }
 
-send()
+if(data.type==="system"){
+system(data.msg)
+return
+}
+
+if(data.type==="typing"){
+typingDiv.innerText=data.name+" is typing..."
+return
+}
+
+if(data.type==="stopTyping"){
+typingDiv.innerText=""
+return
+}
+
+if(data.type==="reaction"){
+applyReaction(data)
+return
+}
+
+if(data.type!=="msg") return
+
+if(seenMessages.has(data.id)) return
+
+seenMessages.add(data.id)
+
+addMessage(data)
+messageHistory.push(data)
+
+}
+
+/* REACTIONS */
+
+document.addEventListener("click",e=>{
+
+if(e.target.parentElement?.classList.contains("reactions")){
+
+const emoji=e.target.innerText
+const id=e.target.parentElement.id.replace("react-","")
+
+const data={
+type:"reaction",
+id:id,
+emoji:emoji
+}
+
+applyReaction(data)
+broadcast(data)
 
 }
 
 })
 
+function applyReaction(d){
+
+const el=document.getElementById("react-"+d.id)
+if(!el) return
+
+const span=document.createElement("span")
+span.innerText=" "+d.emoji
+el.appendChild(span)
+
+}
+
+/* BROADCAST */
+
+function broadcast(data){
+
+connections.forEach(c=>{
+if(c.open) c.send(data)
+})
+
+}
+
 </script>
 
 </body>
 </html>
+```
