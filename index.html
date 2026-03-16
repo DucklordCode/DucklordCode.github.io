@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Bhys Chat(brodybessy<3)</title>
+<title>Bhys Chat</title>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -22,6 +22,7 @@ color:white;
 display:flex;
 height:100vh;
 overflow:hidden;
+transition:all .3s;
 }
 
 /* SIDEBAR */
@@ -35,7 +36,7 @@ overflow:auto;
 transition:left .3s;
 }
 
-#sidebar input,#sidebar button{
+#sidebar input,#sidebar button,#sidebar select{
 width:100%;
 padding:8px;
 margin-bottom:8px;
@@ -129,6 +130,15 @@ background:#1f2937;
 color:white;
 }
 
+/* SETTINGS MENU */
+
+#settingsPanel{
+margin-top:15px;
+padding:10px;
+background:#1f2937;
+border-radius:8px;
+}
+
 /* MOBILE */
 
 #menuBtn{
@@ -177,6 +187,52 @@ max-height:90%;
 border-radius:8px;
 }
 
+/* UI FLAVORS */
+
+.theme-neon{
+background:#020617;
+color:#00ffff;
+text-shadow:0 0 6px #00ffff;
+}
+
+.theme-glass{
+backdrop-filter:blur(12px);
+background:rgba(255,255,255,0.08);
+}
+
+.theme-liquid{
+background:linear-gradient(45deg,#1e3a8a,#0ea5e9);
+}
+
+.theme-fire{
+background:linear-gradient(45deg,#7f1d1d,#f97316);
+color:#ffedd5;
+}
+
+.theme-ice{
+background:linear-gradient(45deg,#0ea5e9,#e0f2fe);
+color:#0c4a6e;
+}
+
+.theme-hot{
+background:#7f1d1d;
+color:#ffedd5;
+}
+
+.theme-cold{
+background:#1e3a8a;
+color:#e0f2fe;
+}
+
+.theme-rainbow{
+animation:hueShift 8s linear infinite;
+}
+
+@keyframes hueShift{
+0%{filter:hue-rotate(0deg);}
+100%{filter:hue-rotate(360deg);}
+}
+
 </style>
 </head>
 
@@ -203,6 +259,23 @@ border-radius:8px;
 <input id="badge" placeholder="Badge">
 <input type="file" id="avatarUpload" accept="image/*">
 
+<div id="settingsPanel">
+<h3>Settings</h3>
+
+<select onchange="setTheme(this.value)">
+<option value="">Default</option>
+<option value="theme-rainbow">All Colors</option>
+<option value="theme-neon">Neon Lights</option>
+<option value="theme-glass">Glassy</option>
+<option value="theme-liquid">Liquid</option>
+<option value="theme-fire">Fire</option>
+<option value="theme-ice">Ice</option>
+<option value="theme-hot">Hot</option>
+<option value="theme-cold">Cold</option>
+</select>
+
+</div>
+
 </div>
 
 <div id="main">
@@ -220,6 +293,35 @@ border-radius:8px;
 
 <script>
 
+/* THEME SWITCHER */
+
+function setTheme(t){
+
+document.body.className=""
+
+if(t) document.body.classList.add(t)
+
+}
+
+/* MOBILE MENU */
+
+function toggleMenu(){
+sidebar.classList.toggle("open")
+}
+
+/* IMAGE VIEWER */
+
+function openImage(src){
+viewerImg.src=src
+imageViewer.style.display="flex"
+}
+
+function closeImage(){
+imageViewer.style.display="none"
+}
+
+/* CHAT SCRIPT (UNCHANGED CORE) */
+
 let peer=null
 let connections=[]
 let seenMessages=new Set()
@@ -230,19 +332,9 @@ let typingTimer=null
 const chat=document.getElementById("chat")
 const typingDiv=document.getElementById("typing")
 
-/* MOBILE MENU */
-
-function toggleMenu(){
-sidebar.classList.toggle("open")
-}
-
-/* ENTER KEY */
-
 message.addEventListener("keydown",e=>{
 if(e.key==="Enter") send()
 })
-
-/* TYPING INDICATOR */
 
 message.addEventListener("input",()=>{
 
@@ -256,8 +348,6 @@ broadcast({type:"stopTyping"})
 
 })
 
-/* SYSTEM */
-
 function system(text){
 const div=document.createElement("div")
 div.className="system"
@@ -265,8 +355,6 @@ div.innerText=text
 chat.appendChild(div)
 chat.scrollTop=chat.scrollHeight
 }
-
-/* AVATAR */
 
 avatarUpload.addEventListener("change",()=>{
 
@@ -283,17 +371,9 @@ reader.readAsDataURL(file)
 
 })
 
-/* CONNECTION */
-
 function closePeer(){
-
-if(peer){
-peer.destroy()
-peer=null
-}
-
+if(peer){peer.destroy();peer=null}
 connections=[]
-
 }
 
 function setupConnection(conn){
@@ -301,12 +381,7 @@ function setupConnection(conn){
 connections.push(conn)
 
 conn.on("open",()=>{
-
-conn.send({
-type:"history",
-messages:messageHistory
-})
-
+conn.send({type:"history",messages:messageHistory})
 })
 
 conn.on("data",handleData)
@@ -316,8 +391,6 @@ system("User disconnected")
 })
 
 }
-
-/* CREATE ROOM */
 
 function createRoom(){
 
@@ -343,8 +416,6 @@ setupConnection(conn)
 })
 
 }
-
-/* JOIN ROOM */
 
 function joinRoom(){
 
@@ -376,8 +447,6 @@ setupConnection(conn)
 
 }
 
-/* MESSAGE UI */
-
 function addMessage(d){
 
 const div=document.createElement("div")
@@ -394,13 +463,9 @@ let fileHTML=""
 if(d.file){
 
 if(d.file.name.match(/\.(png|jpg|jpeg|gif|webp)$/i)){
-
 fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;margin-top:5px;cursor:pointer;" onclick="openImage('${d.file.data}')">`
-
 }else{
-
 fileHTML=`<a href="${d.file.data}" download="${d.file.name}">📎 ${d.file.name}</a>`
-
 }
 
 }
@@ -428,8 +493,6 @@ chat.scrollTop=chat.scrollHeight
 
 }
 
-/* SEND MESSAGE */
-
 function send(){
 
 const text=message.value.trim()
@@ -453,10 +516,7 @@ if(file){
 const reader=new FileReader()
 
 reader.onload=e=>{
-data.file={
-name:file.name,
-data:e.target.result
-}
+data.file={name:file.name,data:e.target.result}
 finish()
 }
 
@@ -470,9 +530,7 @@ function finish(){
 
 addMessage(data)
 messageHistory.push(data)
-
 broadcast(data)
-
 seenMessages.add(data.id)
 
 }
@@ -481,8 +539,6 @@ message.value=""
 fileUpload.value=""
 
 }
-
-/* HANDLE DATA */
 
 function handleData(data){
 
@@ -524,30 +580,10 @@ messageHistory.push(data)
 
 }
 
-/* IMAGE VIEWER */
-
-function openImage(src){
-
-const viewer=document.getElementById("imageViewer")
-const img=document.getElementById("viewerImg")
-
-img.src=src
-viewer.style.display="flex"
-
-}
-
-function closeImage(){
-document.getElementById("imageViewer").style.display="none"
-}
-
-/* BROADCAST */
-
 function broadcast(data){
-
 connections.forEach(c=>{
 if(c.open) c.send(data)
 })
-
 }
 
 </script>
