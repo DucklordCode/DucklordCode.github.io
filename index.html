@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Bhys Chat</title>
+<title>Bhys Chat(brodybessy<3)</title>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -104,12 +104,6 @@ font-style:italic;
 margin:6px 0;
 }
 
-.reactions{
-font-size:14px;
-margin-top:3px;
-cursor:pointer;
-}
-
 .typing{
 font-size:12px;
 opacity:.6;
@@ -165,10 +159,32 @@ left:0;
 
 }
 
+/* IMAGE VIEWER */
+
+#imageViewer{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.9);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+}
+
+#imageViewer img{
+max-width:90%;
+max-height:90%;
+border-radius:8px;
+}
+
 </style>
 </head>
 
 <body>
+
+<div id="imageViewer" onclick="closeImage()">
+<img id="viewerImg">
+</div>
 
 <button id="menuBtn" onclick="toggleMenu()">☰</button>
 
@@ -203,8 +219,6 @@ left:0;
 </div>
 
 <script>
-
-/* GLOBALS */
 
 let peer=null
 let connections=[]
@@ -381,7 +395,7 @@ if(d.file){
 
 if(d.file.name.match(/\.(png|jpg|jpeg|gif|webp)$/i)){
 
-fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;margin-top:5px;">`
+fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;margin-top:5px;cursor:pointer;" onclick="openImage('${d.file.data}')">`
 
 }else{
 
@@ -404,10 +418,6 @@ ${d.badge?`<span class="badge">${d.badge}</span>`:""}
 <div>${d.msg||""}</div>
 
 ${fileHTML}
-
-<div class="reactions" id="react-${d.id}">
-👍 ❤️ 😂 😮 😢
-</div>
 
 </div>
 
@@ -503,11 +513,6 @@ typingDiv.innerText=""
 return
 }
 
-if(data.type==="reaction"){
-applyReaction(data)
-return
-}
-
 if(data.type!=="msg") return
 
 if(seenMessages.has(data.id)) return
@@ -519,37 +524,20 @@ messageHistory.push(data)
 
 }
 
-/* REACTIONS */
+/* IMAGE VIEWER */
 
-document.addEventListener("click",e=>{
+function openImage(src){
 
-if(e.target.parentElement?.classList.contains("reactions")){
+const viewer=document.getElementById("imageViewer")
+const img=document.getElementById("viewerImg")
 
-const emoji=e.target.innerText
-const id=e.target.parentElement.id.replace("react-","")
-
-const data={
-type:"reaction",
-id:id,
-emoji:emoji
-}
-
-applyReaction(data)
-broadcast(data)
+img.src=src
+viewer.style.display="flex"
 
 }
 
-})
-
-function applyReaction(d){
-
-const el=document.getElementById("react-"+d.id)
-if(!el) return
-
-const span=document.createElement("span")
-span.innerText=" "+d.emoji
-el.appendChild(span)
-
+function closeImage(){
+document.getElementById("imageViewer").style.display="none"
 }
 
 /* BROADCAST */
