@@ -61,19 +61,10 @@ overflow:auto;
 padding:15px;
 }
 
-/* ROOM INFO */
-
-#roomInfo{
-padding:6px;
-background:#020617;
-font-size:13px;
-}
-
-/* USERS */
-
-#userList{
+#typingIndicator{
 font-size:12px;
-margin-top:10px;
+opacity:.6;
+padding:4px 10px;
 }
 
 /* MESSAGE */
@@ -109,7 +100,7 @@ font-size:11px;
 margin-left:6px;
 }
 
-/* INPUT */
+/* INPUT BAR */
 
 #inputbar{
 display:flex;
@@ -119,7 +110,7 @@ border-top:1px solid #1f2937;
 background:#111827;
 }
 
-#inputbar input[type=text]{
+#inputbar input{
 flex:1;
 padding:8px;
 border-radius:6px;
@@ -128,36 +119,13 @@ background:#1f2937;
 color:white;
 }
 
-/* TYPING */
-
-#typingIndicator{
-font-size:12px;
-opacity:.6;
-padding:4px 10px;
-}
-
-/* IMAGE ZOOM */
-
-#zoomViewer{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.9);
-display:none;
-align-items:center;
-justify-content:center;
-}
-
-#zoomViewer img{
-max-width:90%;
-max-height:90%;
-}
-
 /* SETTINGS */
 
 #settingsBtn{
 position:absolute;
 top:10px;
 right:10px;
+z-index:1000;
 }
 
 #settingsPanel{
@@ -168,51 +136,78 @@ background:#111827;
 padding:15px;
 border-radius:8px;
 display:none;
+z-index:1000;
 }
+
+/* THEMES */
 
 .theme-light{background:#f4f4f4;color:black;}
 .theme-green{background:#022c22;}
 .theme-purple{background:#1e1b4b;}
 
-/* PRANKS */
+/* FRUTIGER AERO */
 
-.rainbow-screen{
-animation:hue 6s linear infinite;
+.theme-aero{
+background:
+radial-gradient(circle at 20% 20%, #a7f3d0, transparent 40%),
+radial-gradient(circle at 80% 30%, #7dd3fc, transparent 40%),
+linear-gradient(#b3e5fc,#38bdf8);
+color:#003344;
+font-family:Verdana;
 }
 
-@keyframes hue{
-0%{filter:hue-rotate(0deg);}
-100%{filter:hue-rotate(360deg);}
+/* glass panels */
+
+.theme-aero #sidebar{
+background:rgba(255,255,255,0.35);
+backdrop-filter:blur(12px);
 }
 
-.fuzzy-ui{
-filter:grayscale(100%) contrast(200%) blur(1px);
+.theme-aero #chat{
+background:rgba(255,255,255,0.25);
+backdrop-filter:blur(10px);
 }
 
-.banana-ui{
-background:#fde047;
-color:#78350f;
-}
+/* bubbles */
 
-/* BRODY */
-
-#brodyError{
+.bubble{
 position:fixed;
-inset:0;
-background:#0078d7;
-color:white;
-font-family:Courier New;
-display:none;
-padding:40px;
-overflow:auto;
-z-index:9999;
+bottom:-100px;
+width:30px;
+height:30px;
+background:rgba(255,255,255,.4);
+border-radius:50%;
+animation:bubbleFloat 15s linear infinite;
+pointer-events:none;
 }
 
-#brodyText{
-white-space:pre;
+@keyframes bubbleFloat{
+0%{transform:translateY(0)}
+100%{transform:translateY(-120vh)}
 }
 
-/* SIN EVENT */
+/* globe */
+
+.globe{
+position:fixed;
+bottom:20px;
+right:20px;
+width:120px;
+height:120px;
+border-radius:50%;
+background:
+radial-gradient(circle at 30% 30%, #a7f3d0, #38bdf8);
+opacity:.4;
+animation:spin 30s linear infinite;
+pointer-events:none;
+}
+
+@keyframes spin{
+0%{transform:rotate(0deg)}
+100%{transform:rotate(360deg)}
+}
+
+/* SIN */
 
 #sinOverlay{
 position:fixed;
@@ -231,25 +226,23 @@ animation:crackSpread 1.2s forwards;
 }
 
 @keyframes crackSpread{
-0%{width:0;opacity:0;}
-100%{width:100vw;opacity:1;}
+0%{width:0}
+100%{width:100vw}
 }
 
 .sinPopup{
 position:fixed;
-background:#000;
+background:black;
 color:#ff00aa;
 border:2px solid #ff00aa;
 padding:10px;
 font-family:Courier New;
-z-index:9999;
 animation:fallError 2s linear forwards;
 }
 
 @keyframes fallError{
-0%{transform:translateY(-200px);opacity:0;}
-30%{opacity:1;}
-100%{transform:translateY(110vh);opacity:0;}
+0%{transform:translateY(-200px)}
+100%{transform:translateY(110vh)}
 }
 
 </style>
@@ -261,15 +254,6 @@ animation:fallError 2s linear forwards;
 
 <div id="settingsPanel">
 
-<h3>Font</h3>
-
-<select onchange="setFont(this.value)">
-<option value="Segoe UI">Default</option>
-<option value="Courier New">Terminal</option>
-<option value="Verdana">Verdana</option>
-<option value="Georgia">Georgia</option>
-</select>
-
 <h3>Theme</h3>
 
 <select onchange="setTheme(this.value)">
@@ -277,19 +261,12 @@ animation:fallError 2s linear forwards;
 <option value="theme-light">Light</option>
 <option value="theme-green">Green</option>
 <option value="theme-purple">Purple</option>
+<option value="theme-aero">Frutiger Aero</option>
 </select>
 
 </div>
 
-<div id="brodyError">
-<div id="brodyText"></div>
-</div>
-
 <div id="sinOverlay"></div>
-
-<div id="zoomViewer" onclick="closeZoom()">
-<img id="zoomImg">
-</div>
 
 <div id="sidebar">
 
@@ -301,14 +278,10 @@ animation:fallError 2s linear forwards;
 
 <div id="roomInfo">Not connected</div>
 
-<h3>Users</h3>
-<div id="userList"></div>
-
 <h3>Profile</h3>
 
 <input id="username" placeholder="Name">
 <input type="color" id="color" value="#60a5fa">
-<input id="badge" placeholder="Badge">
 <input type="file" id="avatarUpload">
 
 </div>
@@ -344,59 +317,64 @@ settingsPanel.style.display=
 settingsPanel.style.display==="block"?"none":"block"
 }
 
-function setFont(f){
-document.body.style.fontFamily=f
-localStorage.setItem("font",f)
-}
-
 function setTheme(t){
 
 document.body.classList.remove(
-"theme-light","theme-green","theme-purple"
+"theme-light","theme-green","theme-purple","theme-aero"
 )
 
-if(t)document.body.classList.add(t)
+removeAeroEffects()
 
-localStorage.setItem("theme",t)
+if(t){
 
-}
+document.body.classList.add(t)
 
-/* PROFILE */
-
-function saveProfile(){
-
-localStorage.setItem("name",username.value)
-localStorage.setItem("badge",badge.value)
-localStorage.setItem("color",color.value)
-localStorage.setItem("avatar",userAvatar)
+if(t==="theme-aero") enableAero()
 
 }
 
-function loadProfile(){
+}
 
-username.value=localStorage.getItem("name")||""
-badge.value=localStorage.getItem("badge")||""
-color.value=localStorage.getItem("color")||"#60a5fa"
+/* AERO EFFECTS */
 
-userAvatar=localStorage.getItem("avatar")
+function enableAero(){
+
+spawnBubbles()
+
+let globe=document.createElement("div")
+globe.className="globe"
+globe.id="aeroGlobe"
+
+document.body.appendChild(globe)
 
 }
 
-loadProfile()
+function removeAeroEffects(){
 
-/* SYSTEM MESSAGE */
+document.querySelectorAll(".bubble").forEach(b=>b.remove())
 
-function system(msg){
-
-const d=document.createElement("div")
-d.style.opacity=.7
-d.innerText=msg
-
-chat.appendChild(d)
+let g=document.getElementById("aeroGlobe")
+if(g) g.remove()
 
 }
 
-/* CLOSE */
+function spawnBubbles(){
+
+for(let i=0;i<12;i++){
+
+let b=document.createElement("div")
+b.className="bubble"
+
+b.style.left=Math.random()*100+"vw"
+b.style.animationDuration=10+Math.random()*10+"s"
+
+document.body.appendChild(b)
+
+}
+
+}
+
+/* NETWORK */
 
 function closePeer(){
 
@@ -406,19 +384,13 @@ connections=[]
 
 }
 
-/* CREATE ROOM */
-
 function createRoom(){
 
 closePeer()
 
 isHost=true
 
-peer=new Peer(room.value,{
-host:"peerjs-server.herokuapp.com",
-secure:true,
-port:443
-})
+peer=new Peer(room.value)
 
 peer.on("open",id=>{
 
@@ -454,23 +426,17 @@ connections=connections.filter(c=>c!==conn)
 
 }
 
-/* JOIN */
-
 function joinRoom(){
 
 closePeer()
 
 isHost=false
 
-peer=new Peer({
-host:"peerjs-server.herokuapp.com",
-secure:true,
-port:443
-})
+peer=new Peer()
 
 peer.on("open",()=>{
 
-const conn=peer.connect(room.value)
+let conn=peer.connect(room.value)
 
 connections=[conn]
 
@@ -482,14 +448,32 @@ conn.on("data",handleData)
 
 }
 
+/* AVATAR UPLOAD */
+
+avatarUpload.onchange=()=>{
+
+let f=avatarUpload.files[0]
+
+if(!f) return
+
+let r=new FileReader()
+
+r.onload=e=>{
+userAvatar=e.target.result
+}
+
+r.readAsDataURL(f)
+
+}
+
 /* MESSAGE */
 
 function addMessage(d){
 
-const div=document.createElement("div")
+let div=document.createElement("div")
 div.className="msg"
 
-let avatarHTML=d.avatar
+let avatar=d.avatar
 ? `<div class="avatar"><img src="${d.avatar}"></div>`
 : `<div class="avatar">${d.name[0]}</div>`
 
@@ -499,7 +483,7 @@ if(d.file){
 
 if(d.fileType.startsWith("image/")){
 
-fileHTML=`<img src="${d.file}" style="max-width:200px;cursor:pointer" onclick="zoomImage('${d.file}')">`
+fileHTML=`<img src="${d.file}" style="max-width:200px;border-radius:6px;">`
 
 }else{
 
@@ -511,11 +495,10 @@ fileHTML=`<a href="${d.file}" download="${d.fileName}">Download ${d.fileName}</a
 
 div.innerHTML=`
 
-${avatarHTML}
+${avatar}
 
 <div>
 <span style="color:${d.color}">${d.name}</span>
-${d.badge?`<span class="badge">${d.badge}</span>`:""}
 <div>${d.msg||""}</div>
 ${fileHTML}
 </div>
@@ -527,22 +510,18 @@ chat.scrollTop=chat.scrollHeight
 
 }
 
-/* BROADCAST */
+function broadcast(data){
 
-function broadcast(d){
-
-connections.forEach(c=>c.send(d))
+connections.forEach(c=>c.send(data))
 
 }
 
-/* SEND */
-
 function send(){
 
-const msg=message.value.trim()
-const f=file.files[0]
+let msg=message.value.trim()
+let f=file.files[0]
 
-if(!msg && !f)return
+if(!msg && !f) return
 
 if(msg.toLowerCase()==="/summon sin"){
 
@@ -552,19 +531,18 @@ return
 
 }
 
-const data={
+let data={
 id:Date.now()+Math.random(),
 type:"msg",
 name:username.value||"User",
 color:color.value,
-badge:badge.value,
 avatar:userAvatar,
 msg:msg
 }
 
 if(f){
 
-const r=new FileReader()
+let r=new FileReader()
 
 r.onload=e=>{
 
@@ -578,7 +556,11 @@ finish()
 
 r.readAsDataURL(f)
 
-}else finish()
+}else{
+
+finish()
+
+}
 
 function finish(){
 
@@ -594,52 +576,26 @@ file.value=""
 
 /* RECEIVE */
 
-function handleData(data){
+function handleData(d){
 
-if(data.type==="sin"){
-triggerSin()
-return
-}
+if(d.type==="sin"){triggerSin();return}
 
-if(data.type==="msg"){
+if(seen.has(d.id))return
+seen.add(d.id)
 
-if(seen.has(data.id))return
-seen.add(data.id)
-
-addMessage(data)
+addMessage(d)
 
 }
 
-}
+/* SYSTEM */
 
-/* IMAGE */
+function system(t){
 
-function zoomImage(src){
+let d=document.createElement("div")
+d.style.opacity=.6
+d.innerText=t
 
-zoomViewer.style.display="flex"
-zoomImg.src=src
-
-}
-
-function closeZoom(){
-
-zoomViewer.style.display="none"
-
-}
-
-/* AVATAR */
-
-avatarUpload.onchange=()=>{
-
-const f=avatarUpload.files[0]
-const r=new FileReader()
-
-r.onload=e=>{
-userAvatar=e.target.result
-localStorage.setItem("avatar",userAvatar)
-}
-
-r.readAsDataURL(f)
+chat.appendChild(d)
 
 }
 
@@ -652,10 +608,8 @@ sinOverlay.innerHTML=""
 
 for(let i=0;i<20;i++){
 
-const c=document.createElement("div")
-
+let c=document.createElement("div")
 c.className="crack"
-
 c.style.top=Math.random()*window.innerHeight+"px"
 
 sinOverlay.appendChild(c)
@@ -664,12 +618,9 @@ sinOverlay.appendChild(c)
 
 setTimeout(()=>{
 
-let count=0
+for(let i=0;i<25;i++){
 
-const i=setInterval(()=>{
-
-const p=document.createElement("div")
-
+let p=document.createElement("div")
 p.className="sinPopup"
 
 p.innerText="STRAYAWAYFROMWHATSRIGHT"
@@ -680,11 +631,7 @@ document.body.appendChild(p)
 
 setTimeout(()=>p.remove(),2000)
 
-count++
-
-if(count>25)clearInterval(i)
-
-},120)
+}
 
 },1200)
 
@@ -692,14 +639,13 @@ setTimeout(()=>{
 
 sinOverlay.style.display="none"
 closePeer()
-
 system("Sin shattered the room.")
 
 },4500)
 
 }
 
-/* ENTER */
+/* ENTER SEND */
 
 document.addEventListener("keydown",e=>{
 
