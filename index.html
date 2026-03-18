@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -201,15 +200,11 @@ z-index:0;
 
 /* THEMES */
 
-/* Neon */
-
 .theme-neon{
 background:#020617;
 color:#00ffff;
 text-shadow:0 0 6px #00ffff,0 0 15px #00ffff;
 }
-
-/* Glass */
 
 .theme-glass #sidebar,
 .theme-glass #inputbar,
@@ -218,8 +213,6 @@ background:rgba(255,255,255,0.08);
 backdrop-filter:blur(12px);
 border:1px solid rgba(255,255,255,0.1);
 }
-
-/* Liquid */
 
 .theme-liquid{
 background:linear-gradient(-45deg,#1e3a8a,#0ea5e9,#2563eb,#38bdf8);
@@ -233,8 +226,6 @@ animation:liquidFlow 12s ease infinite;
 100%{background-position:0% 50%;}
 }
 
-/* Fire */
-
 .theme-fire{
 background:#1a0000;
 color:#ffd7a3;
@@ -243,8 +234,6 @@ color:#ffd7a3;
 .theme-fire .msg{
 text-shadow:0 0 6px #ff6a00;
 }
-
-/* Ice */
 
 .theme-ice{
 background:#0b1a2b;
@@ -255,21 +244,15 @@ color:#dff6ff;
 text-shadow:0 0 6px #7dd3fc;
 }
 
-/* Hot */
-
 .theme-hot{
 background:linear-gradient(#3b0000,#7f1d1d);
 color:#ffedd5;
 }
 
-/* Cold */
-
 .theme-cold{
 background:linear-gradient(#020617,#1e3a8a);
 color:#dbeafe;
 }
-
-/* Rainbow */
 
 .theme-rainbow{
 animation:hueShift 8s linear infinite;
@@ -278,6 +261,152 @@ animation:hueShift 8s linear infinite;
 @keyframes hueShift{
 0%{filter:hue-rotate(0deg);}
 100%{filter:hue-rotate(360deg);}
+}
+
+
+
+/* === NEW THEMES === */
+
+/* Sorrow Theme */
+.theme-sorrow{
+background:linear-gradient(160deg,#1a0000,#3b0000,#7a0000);
+color:#ff4d4d;
+position:relative;
+overflow:hidden;
+}
+
+/* Rain effect */
+.theme-sorrow::before{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+background-image:repeating-linear-gradient(
+120deg,
+rgba(255,0,0,0.25) 0px,
+rgba(255,0,0,0.25) 2px,
+transparent 2px,
+transparent 20px
+);
+animation:sorrowRain 0.5s linear infinite;
+z-index:0;
+}
+
+@keyframes sorrowRain{
+0%{background-position:0 0;}
+100%{background-position:200px 400px;}
+}
+
+/* Ocean layer */
+.theme-sorrow::after{
+content:"";
+position:fixed;
+bottom:0;
+left:0;
+width:200%;
+height:180px;
+background:radial-gradient(circle at 50% 0%,#ff0000 0%,#8b0000 60%,transparent 100%);
+animation:sorrowWave 6s ease-in-out infinite alternate;
+opacity:0.7;
+}
+
+@keyframes sorrowWave{
+0%{transform:translateX(0) scaleY(1);}
+100%{transform:translateX(-25%) scaleY(1.2);}
+}
+
+.theme-sorrow #sidebar,
+.theme-sorrow #inputbar,
+.theme-sorrow .msg{
+background:rgba(30,0,0,0.6);
+backdrop-filter:blur(6px);
+border:1px solid rgba(255,0,0,0.2);
+}
+
+
+
+/* Frutiger Aero */
+.theme-aero{
+background:linear-gradient(to bottom,#87cefa,#e0f7ff);
+color:#003b5c;
+}
+
+.theme-aero #sidebar,
+.theme-aero #inputbar,
+.theme-aero .msg{
+background:rgba(255,255,255,0.35);
+backdrop-filter:blur(14px);
+border:1px solid rgba(255,255,255,0.6);
+box-shadow:0 0 20px rgba(0,150,255,0.25);
+}
+
+.theme-aero .msg{
+border-radius:12px;
+}
+
+.theme-aero::before{
+content:"";
+position:fixed;
+inset:0;
+background:url('https://i.imgur.com/8IuucQZ.png') no-repeat center/cover;
+opacity:0.15;
+pointer-events:none;
+}
+
+/* Minimal Dark */
+.theme-minimal{
+background:#0a0a0a;
+color:#e5e5e5;
+}
+
+/* Soft Light */
+.theme-soft{
+background:#f4f4f5;
+color:#111;
+}
+
+.theme-soft #sidebar,
+.theme-soft #inputbar{
+background:#ffffff;
+}
+
+/* Terminal */
+.theme-terminal{
+background:#000;
+color:#00ff9f;
+font-family:monospace;
+}
+
+.theme-terminal .msg{
+text-shadow:0 0 5px #00ff9f;
+}
+
+/* Sunset */
+.theme-sunset{
+background:linear-gradient(135deg,#ff7e5f,#feb47b);
+color:#fff;
+}
+
+/* Ocean */
+.theme-ocean{
+background:linear-gradient(#021e3a,#03506f);
+color:#a5f3fc;
+}
+
+.theme-ocean .msg{
+text-shadow:0 0 6px #22d3ee;
+}
+
+/* Forest */
+.theme-forest{
+background:linear-gradient(#0f2f1f,#1b5e20);
+color:#d9f99d;
+}
+
+/* Retro 90s */
+.theme-retro{
+background:#ff00ff;
+color:#00ffff;
 }
 
 </style>
@@ -313,6 +442,24 @@ animation:hueShift 8s linear infinite;
 
 <select onchange="setTheme(this.value)">
 <option value="">Default</option>
+<option value="theme-aero">Frutiger Aero 🌊</option>
+<option value="theme-rainbow">All Colors</option>
+<option value="theme-neon">Neon Lights</option>
+<option value="theme-glass">Glassy</option>
+<option value="theme-liquid">Liquid</option>
+<option value="theme-fire">Fire</option>
+<option value="theme-ice">Ice</option>
+<option value="theme-hot">Hot</option>
+<option value="theme-cold">Cold</option>
+<option value="theme-minimal">Minimal Dark</option>
+<option value="theme-soft">Soft Light</option>
+<option value="theme-terminal">Terminal</option>
+<option value="theme-sunset">Sunset</option>
+<option value="theme-ocean">Ocean</option>
+<option value="theme-forest">Forest</option>
+<option value="theme-retro">Retro 90s</option>
+<option value="theme-sorrow">Sorrow 🩸</option>
+<option value="">Default</option>
 <option value="theme-rainbow">All Colors</option>
 <option value="theme-neon">Neon Lights</option>
 <option value="theme-glass">Glassy</option>
@@ -342,42 +489,21 @@ animation:hueShift 8s linear infinite;
 
 <script>
 
-/* THEME SYSTEM */
-
 let mode=""
-
 function setTheme(t){
-
 document.body.className=""
 mode=""
-
 if(t){
 document.body.classList.add(t)
-
 if(t==="theme-fire") mode="fire"
 if(t==="theme-ice") mode="ice"
+if(t==="theme-sorrow") mode="sorrow"
+}
 }
 
-}
-
-/* MOBILE MENU */
-
-function toggleMenu(){
-sidebar.classList.toggle("open")
-}
-
-/* IMAGE VIEWER */
-
-function openImage(src){
-viewerImg.src=src
-imageViewer.style.display="flex"
-}
-
-function closeImage(){
-imageViewer.style.display="none"
-}
-
-/* CHAT SYSTEM */
+function toggleMenu(){sidebar.classList.toggle("open")}
+function openImage(src){viewerImg.src=src;imageViewer.style.display="flex"}
+function closeImage(){imageViewer.style.display="none"}
 
 let peer=null
 let connections=[]
@@ -389,20 +515,12 @@ let typingTimer=null
 const chat=document.getElementById("chat")
 const typingDiv=document.getElementById("typing")
 
-message.addEventListener("keydown",e=>{
-if(e.key==="Enter") send()
-})
+message.addEventListener("keydown",e=>{if(e.key==="Enter") send()})
 
 message.addEventListener("input",()=>{
-
 broadcast({type:"typing",name:username.value||"User"})
-
 clearTimeout(typingTimer)
-
-typingTimer=setTimeout(()=>{
-broadcast({type:"stopTyping"})
-},1500)
-
+typingTimer=setTimeout(()=>{broadcast({type:"stopTyping"})},1200)
 })
 
 function system(text){
@@ -414,18 +532,11 @@ chat.scrollTop=chat.scrollHeight
 }
 
 avatarUpload.addEventListener("change",()=>{
-
 const file=avatarUpload.files[0]
 if(!file) return
-
 const reader=new FileReader()
-
-reader.onload=e=>{
-userAvatar=e.target.result
-}
-
+reader.onload=e=>{userAvatar=e.target.result}
 reader.readAsDataURL(file)
-
 })
 
 function closePeer(){
@@ -435,30 +546,25 @@ connections=[]
 
 function setupConnection(conn){
 
+if(connections.includes(conn)) return
 connections.push(conn)
+
+conn.on("data",handleData)
 
 conn.on("open",()=>{
 conn.send({type:"history",messages:messageHistory})
 })
 
-conn.on("data",handleData)
-
 conn.on("close",()=>{
+connections=connections.filter(c=>c!==conn)
 system("User disconnected")
 })
-
 }
 
 function createRoom(){
-
 closePeer()
-
 let roomName=room.value.trim()
-
-if(!roomName){
-roomName=Math.random().toString(36).substring(2,8)
-room.value=roomName
-}
+if(!roomName){alert("Enter room name");return}
 
 peer=new Peer(roomName)
 
@@ -467,94 +573,73 @@ system("Room created: "+roomName)
 system("You are the host")
 })
 
+peer.on("error",err=>{
+if(err.type==="unavailable-id"){
+alert("Room name already taken")
+}
+})
+
 peer.on("connection",conn=>{
 system("User joined room")
 setupConnection(conn)
 })
-
 }
 
 function joinRoom(){
-
 const roomName=room.value.trim()
 if(!roomName) return
 
 closePeer()
-
 peer=new Peer()
 
 peer.on("open",()=>{
-
-const conn=peer.connect(roomName)
+const conn=peer.connect(roomName,{reliable:true})
 
 conn.on("open",()=>{
-
-system("You joined room: "+roomName)
-
-broadcast({
-type:"system",
-msg:(username.value||"User")+" joined the room"
-})
-
-})
-
 setupConnection(conn)
-
+system("You joined room: "+roomName)
+conn.send({type:"system",msg:(username.value||"User")+" joined the room"})
 })
 
+conn.on("error",()=>{
+alert("Failed to join room")
+})
+})
 }
 
 function addMessage(d){
-
 const div=document.createElement("div")
 div.className="msg"
-
 const time=new Date(d.time).toLocaleTimeString()
-
 let avatarHTML=d.avatar
 ? `<div class="avatar"><img src="${d.avatar}"></div>`
 : `<div class="avatar">${d.name.charAt(0).toUpperCase()}</div>`
-
 let fileHTML=""
-
 if(d.file){
-
 if(d.file.name.match(/\.(png|jpg|jpeg|gif|webp)$/i)){
 fileHTML=`<img src="${d.file.data}" style="max-width:200px;border-radius:6px;margin-top:5px;cursor:pointer;" onclick="openImage('${d.file.data}')">`
 }else{
 fileHTML=`<a href="${d.file.data}" download="${d.file.name}">📎 ${d.file.name}</a>`
 }
-
 }
 
 div.innerHTML=`
-
 ${avatarHTML}
-
 <div>
-
 <span class="name" style="color:${d.color}">${d.name}</span>
 ${d.badge?`<span class="badge">${d.badge}</span>`:""}
 <span class="time">${time}</span>
-
 <div>${d.msg||""}</div>
-
 ${fileHTML}
-
-</div>
-
-`
+</div>`
 
 chat.appendChild(div)
 chat.scrollTop=chat.scrollHeight
-
 }
 
 function send(){
-
 const text=message.value.trim()
 const file=fileUpload.files[0]
-
 if(!text && !file) return
 
 const data={
@@ -569,96 +654,72 @@ msg:text
 }
 
 if(file){
-
 const reader=new FileReader()
-
-reader.onload=e=>{
-data.file={name:file.name,data:e.target.result}
-finish()
-}
-
+reader.onload=e=>{data.file={name:file.name,data:e.target.result};finish()}
 reader.readAsDataURL(file)
-
-}else{
-finish()
-}
+}else finish()
 
 function finish(){
-
 addMessage(data)
 messageHistory.push(data)
-broadcast(data)
 seenMessages.add(data.id)
-
+broadcast(data)
 }
 
 message.value=""
 fileUpload.value=""
-
 }
 
 function handleData(data){
-
 if(data.type==="history"){
-
 data.messages.forEach(m=>{
 if(!seenMessages.has(m.id)){
 seenMessages.add(m.id)
 addMessage(m)
 }
 })
-
 return
 }
 
-if(data.type==="system"){
-system(data.msg)
-return
-}
-
-if(data.type==="typing"){
-typingDiv.innerText=data.name+" is typing..."
-return
-}
-
-if(data.type==="stopTyping"){
-typingDiv.innerText=""
-return
-}
-
+if(data.type==="system"){system(data.msg);return}
+if(data.type==="typing"){typingDiv.innerText=data.name+" is typing...";return}
+if(data.type==="stopTyping"){typingDiv.innerText="";return}
 if(data.type!=="msg") return
-
 if(seenMessages.has(data.id)) return
 
 seenMessages.add(data.id)
-
 addMessage(data)
 messageHistory.push(data)
 
+broadcast(data) // relay for full mesh reliability
 }
 
 function broadcast(data){
-connections.forEach(c=>{
-if(c.open) c.send(data)
-})
+connections.forEach(c=>{if(c.open) c.send(data)})
 }
-
-/* PARTICLES */
 
 const canvas=document.getElementById("particles")
 const ctx=canvas.getContext("2d")
-
 let particles=[]
 
-function resize(){
-canvas.width=window.innerWidth
-canvas.height=window.innerHeight
-}
-
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
 window.addEventListener("resize",resize)
 resize()
 
 function spawnParticle(){
+
+if(mode==="sorrow"){
+particles.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+vx:-2 - Math.random()*2,
+vy:4 + Math.random()*3,
+size:Math.random()*2+1,
+life:80,
+type:"rain"
+})
+return
+}
 
 particles.push({
 x:Math.random()*canvas.width,
@@ -666,17 +727,15 @@ y:canvas.height,
 vx:(Math.random()-.5)*0.5,
 vy:-Math.random()*2-1,
 size:Math.random()*4+1,
-life:100
+life:100,
+type:"normal"
 })
-
 }
 
 function draw(){
-
 ctx.clearRect(0,0,canvas.width,canvas.height)
 
 particles.forEach(p=>{
-
 p.x+=p.vx
 p.y+=p.vy
 p.life--
@@ -685,24 +744,39 @@ ctx.beginPath()
 
 if(mode==="fire"){
 ctx.fillStyle="orange"
-}else if(mode==="ice"){
-ctx.fillStyle="lightblue"
-}
-
 ctx.arc(p.x,p.y,p.size,0,Math.PI*2)
 ctx.fill()
+}
+else if(mode==="ice"){
+ctx.fillStyle="lightblue"
+ctx.arc(p.x,p.y,p.size,0,Math.PI*2)
+ctx.fill()
+}
+else if(mode==="sorrow"){
+ctx.strokeStyle="rgba(255,0,0,0.6)"
+ctx.lineWidth=1.5
+ctx.moveTo(p.x,p.y)
+ctx.lineTo(p.x + p.vx*2, p.y + p.vy*2)
+ctx.stroke()
+}
+else{
+ctx.fillStyle="white"
+ctx.arc(p.x,p.y,p.size,0,Math.PI*2)
+ctx.fill()
+}
 
 })
 
 particles=particles.filter(p=>p.life>0)
 
 requestAnimationFrame(draw)
-
 }
 
+
 setInterval(()=>{
-if(mode==="fire"||mode==="ice"){
-spawnParticle()
+if(mode==="fire"||mode==="ice") spawnParticle()
+if(mode==="sorrow"){
+for(let i=0;i<6;i++) spawnParticle()
 }
 },80)
 
@@ -712,4 +786,3 @@ draw()
 
 </body>
 </html>
-```
