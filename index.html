@@ -267,6 +267,66 @@ animation:hueShift 8s linear infinite;
 
 /* === NEW THEMES === */
 
+/* Litany Theme */
+.theme-litany{
+background:linear-gradient(to top,#1a1a1a,#444,#bfbfbf);
+color:#d4d4d4;
+position:relative;
+overflow:hidden;
+}
+
+/* Pixelated jitter overlay */
+.theme-litany::before{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+background-image:
+linear-gradient(0deg,rgba(255,255,255,0.04) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px);
+background-size:5px 5px;
+animation:litanyJitter 0.15s steps(2) infinite;
+}
+
+@keyframes litanyJitter{
+0%{transform:translate(0,0)}
+25%{transform:translate(1px,-1px)}
+50%{transform:translate(-1px,1px)}
+75%{transform:translate(1px,1px)}
+100%{transform:translate(0,0)}
+}
+
+/* Rusty gears */
+.theme-litany .gear{
+position:fixed;
+border-radius:50%;
+border:6px solid rgba(120,60,20,0.5);
+box-shadow:0 0 15px rgba(80,40,10,0.4) inset;
+opacity:0.25;
+animation:spinGear linear infinite;
+}
+
+.theme-litany .gear::before{
+content:"";
+position:absolute;
+inset:-6px;
+border-radius:50%;
+border:4px dashed rgba(120,60,20,0.4);
+}
+
+/* different sizes + speeds */
+.theme-litany .gear1{width:120px;height:120px;top:20%;left:20%;animation-duration:18s;}
+.theme-litany .gear2{width:180px;height:180px;top:50%;left:60%;animation-duration:25s;animation-direction:reverse;}
+.theme-litany .gear3{width:90px;height:90px;top:70%;left:30%;animation-duration:14s;}
+
+@keyframes spinGear{
+0%{transform:rotate(0deg)}
+100%{transform:rotate(360deg)}
+}
+95%{transform:scaleY(0.1) rotate(45deg)}
+}
+
+
 /* Sorrow Theme */
 .theme-sorrow{
 background:linear-gradient(160deg,#1a0000,#3b0000,#7a0000);
@@ -409,6 +469,64 @@ background:#ff00ff;
 color:#00ffff;
 }
 
+/* Zen Theme */
+.theme-zen{
+background:linear-gradient(to bottom,#1a102f,#3b1e6b,#6b4bb3);
+color:#e9d5ff;
+position:relative;
+overflow:hidden;
+}
+
+/* Stars */
+.theme-zen::before{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+background:radial-gradient(2px 2px at 20% 30%,#e9d5ff,transparent),
+radial-gradient(2px 2px at 70% 20%,#e9d5ff,transparent),
+radial-gradient(1.5px 1.5px at 40% 80%,#e9d5ff,transparent),
+radial-gradient(1.5px 1.5px at 80% 60%,#e9d5ff,transparent);
+animation:zenStars 4s ease-in-out infinite alternate;
+opacity:0.6;
+}
+
+@keyframes zenStars{
+0%{opacity:0.3}
+100%{opacity:0.8}
+}
+
+/* Horizon land */
+.theme-zen::after{
+content:"";
+position:fixed;
+bottom:0;
+left:0;
+width:100%;
+height:180px;
+background:linear-gradient(to top,#2a0f4d,#4c1d95);
+clip-path:polygon(0 60%,10% 65%,20% 62%,30% 70%,40% 66%,50% 72%,60% 68%,70% 75%,80% 70%,90% 74%,100% 68%,100% 100%,0 100%);
+opacity:0.8;
+}
+
+/* glass blades */
+.theme-zen .blade{
+position:fixed;
+bottom:0;
+width:6px;
+height:40px;
+background:linear-gradient(#c4b5fd,#7c3aed);
+opacity:0.4;
+border-radius:3px;
+}
+
+.theme-zen .blade:nth-child(1){left:10%;height:50px}
+.theme-zen .blade:nth-child(2){left:25%;height:35px}
+.theme-zen .blade:nth-child(3){left:40%;height:60px}
+.theme-zen .blade:nth-child(4){left:55%;height:30px}
+.theme-zen .blade:nth-child(5){left:70%;height:45px}
+.theme-zen .blade:nth-child(6){left:85%;height:55px}
+
 </style>
 </head>
 
@@ -459,6 +577,8 @@ color:#00ffff;
 <option value="theme-forest">Forest</option>
 <option value="theme-retro">Retro 90s</option>
 <option value="theme-sorrow">Sorrow 🩸</option>
+<option value="theme-litany">Litany 👁️</option>
+<option value="theme-zen">Zen ☯️</option>
 <option value="">Default</option>
 <option value="theme-rainbow">All Colors</option>
 <option value="theme-neon">Neon Lights</option>
@@ -475,6 +595,19 @@ color:#00ffff;
 </div>
 
 <div id="main">
+
+<!-- Zen Blades -->
+<div class="blade"></div>
+<div class="blade"></div>
+<div class="blade"></div>
+<div class="blade"></div>
+<div class="blade"></div>
+<div class="blade"></div>
+
+<!-- Litany Gears -->
+<div class="gear gear1"></div>
+<div class="gear gear2"></div>
+<div class="gear gear3"></div>
 
 <div id="chat"></div>
 <div id="typing" class="typing"></div>
@@ -498,6 +631,7 @@ document.body.classList.add(t)
 if(t==="theme-fire") mode="fire"
 if(t==="theme-ice") mode="ice"
 if(t==="theme-sorrow") mode="sorrow"
+if(t==="theme-zen") mode="zen"
 }
 }
 
@@ -580,8 +714,16 @@ alert("Room name already taken")
 })
 
 peer.on("connection",conn=>{
+
+conn.on("open",()=>{
 system("User joined room")
 setupConnection(conn)
+})
+
+conn.on("error",()=>{
+system("A user failed to connect")
+})
+
 })
 }
 
@@ -593,13 +735,26 @@ closePeer()
 peer=new Peer()
 
 peer.on("open",()=>{
-const conn=peer.connect(roomName,{reliable:true})
+const conn=peer.connect(roomName,{
+reliable:true,
+serialization:"json"
+})
+
+let connected=false
 
 conn.on("open",()=>{
+connected=true
 setupConnection(conn)
 system("You joined room: "+roomName)
 conn.send({type:"system",msg:(username.value||"User")+" joined the room"})
 })
+
+setTimeout(()=>{
+if(!connected){
+alert("Failed to connect to room")
+conn.close()
+}
+},5000)
 
 conn.on("error",()=>{
 alert("Failed to join room")
@@ -721,6 +876,19 @@ type:"rain"
 return
 }
 
+if(mode==="zen"){
+particles.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+vx:0,
+vy:0,
+size:Math.random()*1.5+0.5,
+life:200,
+type:"star"
+})
+return
+}
+
 particles.push({
 x:Math.random()*canvas.width,
 y:canvas.height,
@@ -759,6 +927,11 @@ ctx.moveTo(p.x,p.y)
 ctx.lineTo(p.x + p.vx*2, p.y + p.vy*2)
 ctx.stroke()
 }
+else if(mode==="zen"){
+ctx.fillStyle="rgba(220,200,255,0.8)"
+ctx.arc(p.x,p.y,p.size,0,Math.PI*2)
+ctx.fill()
+}
 else{
 ctx.fillStyle="white"
 ctx.arc(p.x,p.y,p.size,0,Math.PI*2)
@@ -777,6 +950,9 @@ setInterval(()=>{
 if(mode==="fire"||mode==="ice") spawnParticle()
 if(mode==="sorrow"){
 for(let i=0;i<6;i++) spawnParticle()
+}
+if(mode==="zen"){
+for(let i=0;i<2;i++) spawnParticle()
 }
 },80)
 
